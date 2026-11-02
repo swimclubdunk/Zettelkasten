@@ -5,8 +5,8 @@ public static class SemanticSettings
 {
     public const int Dimensions = 384;
     public const int MaxTokens = 256;
-    public const float SearchMinScore = 0.35f;
-    public const float TagSuggestionMinScore = 0.75f;
+    public const float SearchMinScore = 0.25f;
+    public const float TagSuggestionMinScore = 0.60f;
     public const int MaxTagSuggestions = 5;
     public const int RrfK = 60;
     public const int MaxResults = 50;

@@ -21,7 +21,7 @@ A fully offline, single-user Zettelkasten desktop application for personal daily
 - .NET 10, C#, WPF, MVVM via CommunityToolkit.Mvvm
 - DI / hosting: Microsoft.Extensions.Hosting
 - Storage: SQLite (embedded, single file) via EF Core (Microsoft.EntityFrameworkCore.Sqlite); raw SQL for FTS5
-- Embeddings: all-MiniLM-L6-v2 (quantized ONNX) via Microsoft.ML.OnnxRuntime (CPU), tokenizer via Microsoft.ML.Tokenizers
+- Embeddings: all-MiniLM-L6-v2 (quantized ONNX) via Microsoft.ML.OnnxRuntime (CPU), tokenizer: small built-in BERT WordPiece implementation (`WordPieceTokenizer`)
 - Editor: AvalonEdit; Markdown rendering: Markdig → WPF FlowDocument
 - Logging: Serilog (rolling file)
 - Tests: xUnit
@@ -46,14 +46,14 @@ Dependency direction: App → Infrastructure → Core; App → Core. Core depend
 - `Note` (Id, Title, Content, CreatedAt, UpdatedAt, Tags, ManualLinks)
 - `Tag` (Id, Name)
 - `NoteLink` (SourceId, TargetId, Kind: Inline | Manual)
-- `NoteIdGenerator` – `yyyyMMddHHmmss` from an injectable clock; on collision increments by one second until free
+- `NoteIdGenerator` – `yyyyMMddHHmmss` from the local time supplied by `TimeProvider`; on collision increments by one second until free
 - `LinkParser` – extracts distinct `[[id]]` targets (14-digit IDs) from Markdown
 - `TagNormalizer` – trim, lowercase, collapse whitespace to `-`
 - `InitialsMatcher` – true if one normalized tag equals the initials of the other's `-`-separated words (e.g. `ml` ↔ `machine-learning`)
 - `RankFusion` – Reciprocal Rank Fusion (k = 60) over N ranked lists
 - `SearchQueryParser` – splits input into free text, `#tag` filters and `id:` prefix
-- `SemanticSettings` – thresholds (search ≥ 0.35, tag suggestion ≥ 0.75)
-- Interfaces: `INoteRepository`, `ITagRepository`, `ISearchService`, `IEmbeddingService`, `ITagSuggestionService`, `IBackupService`, `IClock`
+- `SemanticSettings` – thresholds (search ≥ 0.25, tag suggestion ≥ 0.60; tuned against the real model, see RealModelThresholdTests)
+- Interfaces: `INoteRepository`, `ITagRepository`, `ISearchService`, `IEmbeddingService`, `ITagSuggestionService`, `IBackupService` (time comes from the BCL `TimeProvider`)
 
 ## 4. Data model & storage
 
@@ -89,14 +89,14 @@ Database file: `%LocalAppData%\Zettelkasten\zettelkasten.db`, WAL mode, schema v
 **Note search**
 - Debounce 250 ms in the view model.
 - Keyword: FTS5 `MATCH` with each term prefix-matched (`term*`), ranked by `bm25`. User input is escaped/quoted to avoid FTS syntax errors.
-- Semantic: embed query text, score against the index, keep scores ≥ 0.35.
+- Semantic: embed query text, score against the index, keep scores ≥ 0.25.
 - Merge with RRF; each result carries flags `MatchedKeyword` / `MatchedSemantic` shown as badges.
 - `#tag` filters restrict results to notes with all given tags; `id:` prefix matches note IDs directly.
 - Empty query → 50 most recently updated notes.
 
 **Tag suggestions**
 - Input normalized; exact normalized match → reuse existing tag silently.
-- Otherwise suggest existing tags with embedding similarity ≥ 0.75 or an initials match, sorted by score, max 5.
+- Otherwise suggest existing tags with embedding similarity ≥ 0.60 or an initials match, sorted by score, max 5.
 - User picks a suggestion or chooses "Create '<name>' anyway". Never blocks.
 - Tag embeddings computed on creation (and backfilled if missing).
 
@@ -119,6 +119,7 @@ Three-column main window: results list (left), note editor (center), side panel 
 - Embedding model missing/corrupt → keyword-only mode, status "semantic search unavailable", details logged.
 - Before applying pending migrations, copy the DB to `zettelkasten.db.bak-yyyyMMddHHmmss`.
 - Global handlers (`DispatcherUnhandledException`, `TaskScheduler.UnobservedTaskException`, `AppDomain.UnhandledException`) log and show a friendly message; continue when possible.
+- Closing the app with unsaved changes that could not be saved asks for confirmation before discarding them.
 - Serilog rolling daily log in `%LocalAppData%\Zettelkasten\logs\`, retained 14 days.
 
 ## 8. Testing

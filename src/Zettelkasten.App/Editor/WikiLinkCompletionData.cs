@@ -11,7 +11,7 @@ public sealed class WikiLinkCompletionData(NoteSummary note) : ICompletionData
 {
     public ImageSource? Image => null;
     public string Text => $"{note.DisplayTitle} {note.Id}";
-    public object Content => $"{note.DisplayTitle}   Â·   {note.Id}";
+    public object Content => $"{note.DisplayTitle}   ·   {note.Id}";
     public object Description => note.Id;
     public double Priority => 0;
 
