@@ -8,6 +8,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <DockPanel Grid.Row="0" Margin="20,14,20,0" Visibility="{Binding HasNote, Converter={StaticResource BoolToVisibility}}">
@@ -32,7 +33,48 @@
                                   VerticalScrollBarVisibility="Auto"
                                   Visibility="{Binding IsPreview, Converter={StaticResource BoolToVisibility}}" />
 
-        <TextBlock Grid.Row="0" Grid.RowSpan="3" HorizontalAlignment="Center" VerticalAlignment="Center"
+        <!-- Markdown cheat sheet: only while editing a note (hidden in preview and when no note is open) -->
+        <Border Grid.Row="3" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0"
+                Background="{StaticResource WindowBrush}" Padding="20,5">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsPreview}" Value="True">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding HasNote}" Value="False">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <ItemsControl Focusable="False">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.Resources>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="FontFamily" Value="Cascadia Mono, Consolas" />
+                        <Setter Property="FontSize" Value="11.5" />
+                        <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+                        <Setter Property="Margin" Value="0,1,18,1" />
+                    </Style>
+                </ItemsControl.Resources>
+                <TextBlock Text="# Heading" />
+                <TextBlock Text="**bold**" />
+                <TextBlock Text="*italic*" />
+                <TextBlock Text="`code`" />
+                <TextBlock Text="- list" />
+                <TextBlock Text="1. list" />
+                <TextBlock Text="&gt; quote" />
+                <TextBlock Text="[text](url)" />
+                <TextBlock Text="[[ note link" />
+                <TextBlock Text="--- rule" />
+                <TextBlock Text="``` code block" />
+            </ItemsControl>
+        </Border>
+
+        <TextBlock Grid.Row="0" Grid.RowSpan="4" HorizontalAlignment="Center" VerticalAlignment="Center"
                    Foreground="{StaticResource MutedBrush}" FontSize="14"
                    Text="No note open – press Ctrl+N to create one."
                    Visibility="{Binding HasNote, Converter={StaticResource InverseBoolToVisibility}}" />
