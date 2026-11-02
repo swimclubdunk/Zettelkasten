@@ -34,8 +34,7 @@ public class RealModelThresholdTests(ITestOutputHelper output)
         async Task<string> Add(string title, string content)
         {
             var n = await notes.CreateAsync();
-            n.Title = title;
-            n.Content = content;
+            n.Content = $"{title}\n{content}";
             await notes.SaveAsync(n);
             await Task.Delay(1100); // distinct second-resolution IDs
             return n.Id;

@@ -3,8 +3,9 @@ namespace Zettelkasten.Core.Model;
 public sealed class Note
 {
     public required string Id { get; init; }
-    public string Title { get; set; } = "";
     public string Content { get; set; } = "";
+    /// <summary>Derived from the content's first line; notes have no separate title.</summary>
+    public string Title => NoteTitle.FromContent(Content);
     public DateTimeOffset CreatedAt { get; init; }
     public DateTimeOffset UpdatedAt { get; set; }
     /// <summary>Normalized tag names.</summary>
@@ -14,14 +15,14 @@ public sealed class Note
 
     public Note Clone() => new()
     {
-        Id = Id, Title = Title, Content = Content, CreatedAt = CreatedAt, UpdatedAt = UpdatedAt,
+        Id = Id, Content = Content, CreatedAt = CreatedAt, UpdatedAt = UpdatedAt,
         Tags = [.. Tags], ManualLinks = [.. ManualLinks],
     };
 }
 
 public sealed record NoteSummary(string Id, string Title, DateTimeOffset UpdatedAt)
 {
-    public string DisplayTitle => string.IsNullOrWhiteSpace(Title) ? "(untitled)" : Title;
+    public string DisplayTitle => string.IsNullOrWhiteSpace(Title) ? "(empty note)" : Title;
 }
 
 public enum LinkKind { Inline = 0, Manual = 1 }
@@ -30,7 +31,7 @@ public enum LinkKind { Inline = 0, Manual = 1 }
 public sealed record LinkInfo(string NoteId, string? Title, LinkKind Kind)
 {
     public bool IsBroken => Title is null;
-    public string DisplayTitle => Title is null ? NoteId : string.IsNullOrWhiteSpace(Title) ? "(untitled)" : Title;
+    public string DisplayTitle => Title is null ? NoteId : string.IsNullOrWhiteSpace(Title) ? "(empty note)" : Title;
 }
 
 public sealed record Tag(int Id, string Name);

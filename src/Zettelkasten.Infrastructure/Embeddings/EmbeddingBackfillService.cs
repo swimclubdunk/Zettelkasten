@@ -32,18 +32,18 @@ public sealed class EmbeddingBackfillService(
         await using (var db = await factory.CreateDbContextAsync(ct))
         {
             var notes = await db.Notes.AsNoTracking()
-                .Select(n => new { n.Id, n.Title, n.Content, Hash = n.Embedding != null ? n.Embedding.ContentHash : null })
+                .Select(n => new { n.Id, n.Content, Hash = n.Embedding != null ? n.Embedding.ContentHash : null })
                 .ToListAsync(ct);
-            var stale = notes.Where(n => ContentHash.Compute(n.Title, n.Content) != n.Hash).ToList();
+            var stale = notes.Where(n => ContentHash.Compute(n.Content) != n.Hash).ToList();
 
             foreach (var batch in stale.Chunk(BatchSize))
             {
                 var vectors = new Dictionary<string, float[]>();
                 foreach (var n in batch)
                 {
-                    var vector = await Task.Run(() => embeddings.Embed(ContentHash.NoteText(n.Title, n.Content)), ct);
+                    var vector = await Task.Run(() => embeddings.Embed(n.Content), ct);
                     vectors[n.Id] = vector;
-                    var hash = ContentHash.Compute(n.Title, n.Content);
+                    var hash = ContentHash.Compute(n.Content);
                     var existing = await db.NoteEmbeddings.FindAsync([n.Id], ct);
                     if (existing is null)
                         db.NoteEmbeddings.Add(new NoteEmbeddingEntity { NoteId = n.Id, Vector = VectorMath.ToBytes(vector), ContentHash = hash });

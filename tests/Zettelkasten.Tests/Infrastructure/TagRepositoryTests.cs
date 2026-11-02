@@ -28,7 +28,7 @@ public sealed class TagRepositoryTests : IAsyncLifetime
     {
         _time.Advance(TimeSpan.FromSeconds(5));
         var n = await _notes.CreateAsync();
-        n.Title = "note";
+        n.Content = "note";
         n.Tags = [.. tags];
         await _notes.SaveAsync(n);
         return n.Id;

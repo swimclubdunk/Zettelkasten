@@ -1,6 +1,7 @@
 using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Zettelkasten.Core.Model;
 
 namespace Zettelkasten.Infrastructure.Data;
 
@@ -25,6 +26,20 @@ public sealed class DbInitializer(
         }
 
         await db.Database.MigrateAsync(ct);
+        if (pending.Any(m => m.EndsWith("_MergeTitlesIntoContent", StringComparison.Ordinal)))
+            await RefreshDerivedTitlesAsync(db, ct);
         await db.Database.ExecuteSqlRawAsync("PRAGMA journal_mode=WAL;", ct);
+    }
+
+    /// <summary>Recomputes each note's cached first-line title and its search-index row from the content.</summary>
+    private static async Task RefreshDerivedTitlesAsync(AppDbContext db, CancellationToken ct)
+    {
+        var notes = await db.Notes.Include(n => n.NoteTags).ThenInclude(nt => nt.Tag).ToListAsync(ct);
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        foreach (var note in notes) note.Title = NoteTitle.FromContent(note.Content);
+        await db.SaveChangesAsync(ct);
+        foreach (var note in notes)
+            await FtsIndex.UpsertAsync(db, note.Id, note.Title, note.Content, note.NoteTags.Select(nt => nt.Tag!.Name), ct);
+        await tx.CommitAsync(ct);
     }
 }

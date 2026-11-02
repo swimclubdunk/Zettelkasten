@@ -14,7 +14,7 @@ public class BackupServiceTests
         await using var db = await TestDb.CreateAsync();
         var notes = new NoteRepository(db.Factory, new FakeEmbeddingService(), new VectorIndex(), TimeProvider.System);
         var n = await notes.CreateAsync();
-        n.Title = "keep me";
+        n.Content = "keep me";
         await notes.SaveAsync(n);
 
         await using var open = new SqliteConnection(db.Paths.ConnectionString); // simulate the app holding a connection

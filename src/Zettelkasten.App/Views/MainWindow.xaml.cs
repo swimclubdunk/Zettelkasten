@@ -14,7 +14,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         DataContext = _vm = vm;
-        vm.FocusTitleRequested += (_, _) => EditorView.FocusTitle();
+        vm.FocusEditorRequested += (_, _) => EditorView.FocusEditor();
         PreviewKeyDown += OnPreviewKeyDown;
         MouseDown += OnMouseDown;
         Closing += OnClosing;

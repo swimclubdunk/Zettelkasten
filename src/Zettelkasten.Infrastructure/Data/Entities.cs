@@ -5,6 +5,7 @@ namespace Zettelkasten.Infrastructure.Data;
 public sealed class NoteEntity
 {
     public required string Id { get; set; }
+    /// <summary>Cached first line of <see cref="Content"/> (notes have no own title); set on every save.</summary>
     public string Title { get; set; } = "";
     public string Content { get; set; } = "";
     public long CreatedAtMs { get; set; }

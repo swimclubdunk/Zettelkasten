@@ -45,10 +45,9 @@ public partial class NoteEditorView : UserControl
         return HighlightingLoader.Load(reader, HighlightingManager.Instance);
     }
 
-    public void FocusTitle()
+    public void FocusEditor()
     {
-        TitleBox.Focus();
-        TitleBox.SelectAll();
+        Editor.Focus();
     }
 
     private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)

@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Zettelkasten.App.Services;
 using Zettelkasten.Core.Abstractions;
 using Zettelkasten.Core.Common;
+using Zettelkasten.Core.Model;
 
 namespace Zettelkasten.App.ViewModels;
 
@@ -49,7 +50,7 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _modelStatus = "";
     [ObservableProperty] private string? _statusMessage;
 
-    public event EventHandler? FocusTitleRequested;
+    public event EventHandler? FocusEditorRequested;
 
     public async Task InitializeAsync()
     {
@@ -77,7 +78,7 @@ public sealed partial class MainViewModel : ObservableObject
         NoteCount = await _notes.CountAsync();
         await Search.RefreshAsync();
         await OpenAsync(note.Id);
-        FocusTitleRequested?.Invoke(this, EventArgs.Empty);
+        FocusEditorRequested?.Invoke(this, EventArgs.Empty);
     }
 
     [RelayCommand(CanExecute = nameof(CanGoBack))]
@@ -107,7 +108,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (note is null) return;
 
         var backlinks = await _notes.GetBacklinksAsync(note.Id);
-        var title = string.IsNullOrWhiteSpace(Editor.Title) ? "(untitled)" : Editor.Title;
+        var title = new NoteSummary(note.Id, NoteTitle.FromContent(Editor.Content), note.UpdatedAt).DisplayTitle;
         var message = $"Delete \"{title}\" ({note.Id})?";
         if (backlinks.Count > 0)
             message += "\n\nThese notes link to it and will show a broken link:\n" +

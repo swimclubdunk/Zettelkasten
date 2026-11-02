@@ -54,7 +54,6 @@ public sealed class NoteRepository(
         return new Note
         {
             Id = e.Id,
-            Title = e.Title,
             Content = e.Content,
             CreatedAt = FromMs(e.CreatedAtMs),
             UpdatedAt = FromMs(e.UpdatedAtMs),
@@ -68,7 +67,7 @@ public sealed class NoteRepository(
         var tags = note.Tags.Select(TagNormalizer.Normalize).Where(t => t.Length > 0).Distinct().ToList();
         var manual = note.ManualLinks.Where(id => NoteIdGenerator.IsValid(id) && id != note.Id).Distinct().ToList();
         var inline = LinkParser.ExtractTargets(note.Content).Where(id => id != note.Id).ToList();
-        var hash = ContentHash.Compute(note.Title, note.Content);
+        var hash = ContentHash.Compute(note.Content);
 
         await using var db = await factory.CreateDbContextAsync(ct);
         var entity = await db.Notes
@@ -79,12 +78,12 @@ public sealed class NoteRepository(
 
         float[]? vector = null;
         if (embeddings.IsAvailable && entity.Embedding?.ContentHash != hash)
-            vector = await Task.Run(() => embeddings.Embed(ContentHash.NoteText(note.Title, note.Content)), ct);
+            vector = await Task.Run(() => embeddings.Embed(note.Content), ct);
 
         var now = time.GetLocalNow();
         await using var tx = await db.Database.BeginTransactionAsync(ct);
 
-        entity.Title = note.Title;
+        entity.Title = note.Title; // cached first line, for lists and links
         entity.Content = note.Content;
         entity.UpdatedAtMs = now.ToUnixTimeMilliseconds();
 

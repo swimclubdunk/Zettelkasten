@@ -43,7 +43,7 @@ tests/
 Dependency direction: App → Infrastructure → Core; App → Core. Core depends on nothing.
 
 ### Core (key types)
-- `Note` (Id, Title, Content, CreatedAt, UpdatedAt, Tags, ManualLinks)
+- `Note` (Id, Content, CreatedAt, UpdatedAt, Tags, ManualLinks). Notes have no title of their own: the read-only `Title` is the content's first meaningful line (`NoteTitle.FromContent`: Markdown markers stripped, max 80 chars; empty note → "(empty note)").
 - `Tag` (Id, Name)
 - `NoteLink` (SourceId, TargetId, Kind: Inline | Manual)
 - `NoteIdGenerator` – `yyyyMMddHHmmss` from the local time supplied by `TimeProvider`; on collision increments by one second until free
@@ -61,11 +61,11 @@ Database file: `%LocalAppData%\Zettelkasten\zettelkasten.db`, WAL mode, schema v
 
 | Table | Columns | Notes |
 |---|---|---|
-| `Notes` | `Id` TEXT PK, `Title`, `Content`, `CreatedAt`, `UpdatedAt` | Id = creation timestamp `yyyyMMddHHmmss` |
+| `Notes` | `Id` TEXT PK, `Title`, `Content`, `CreatedAt`, `UpdatedAt` | Id = creation timestamp `yyyyMMddHHmmss`; `Title` is a cached first line of `Content`, set on every save (migration `MergeTitlesIntoContent` moved former titles into the content as a `# heading`) |
 | `Tags` | `Id` INT PK, `Name` UNIQUE (NOCASE), `Embedding` BLOB | Name stored normalized |
 | `NoteTags` | `NoteId`, `TagId` | composite PK; cascade on delete |
 | `NoteLinks` | `SourceId`, `TargetId`, `Kind` | PK (SourceId, TargetId, Kind); TargetId not a FK (allows broken links) |
-| `NoteEmbeddings` | `NoteId` PK, `Vector` BLOB (384 × float32), `ContentHash` | Recomputed only when hash of Title+Content changes |
+| `NoteEmbeddings` | `NoteId` PK, `Vector` BLOB (384 × float32), `ContentHash` | Recomputed only when the hash of Content changes |
 | `NotesFts` | FTS5 virtual table (`NoteId` UNINDEXED, `Title`, `Content`, `Tags`) | Created in a migration via raw SQL |
 
 **Rules**
@@ -105,7 +105,7 @@ Database file: `%LocalAppData%\Zettelkasten\zettelkasten.db`, WAL mode, schema v
 Three-column main window: results list (left), note editor (center), side panel (right); search bar + "New" button on top; status bar at bottom.
 
 - **Results list:** title, ID, match badges (🔤 keyword, 🧠 semantic).
-- **Editor:** ID (read-only), title box, Edit/Preview toggle. Edit = AvalonEdit with light Markdown highlighting and `[[` autocomplete (title search, inserts `[[id]]`). Preview = Markdig → FlowDocument; `[[id]]` rendered as clickable link labelled with the target title (broken ones in red).
+- **Editor:** ID (read-only, faint), Edit/Preview toggle, then the content directly (no title box; Ctrl+N focuses the body). A one-line Markdown cheat sheet sits under the editor while editing. Edit = AvalonEdit with light Markdown highlighting and `[[` autocomplete (title search, inserts `[[id]]`). Preview = Markdig → FlowDocument; `[[id]]` rendered as clickable link labelled with the target title (broken ones in red).
 - **Side panel:** tags (remove ✕, add box with suggestion dropdown), related/manual links (remove ✕, "+ link note" picker), outgoing links (broken marked ⚠), backlinks (inline + manual).
 - **Status bar:** last saved time, note count, model status, save errors.
 - **Auto-save:** 1 s after last edit, on note switch, and on window close; `Ctrl+S` forces save.

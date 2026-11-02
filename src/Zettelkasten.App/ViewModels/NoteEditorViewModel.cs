@@ -27,8 +27,6 @@ public sealed partial class NoteEditorViewModel : ObservableObject, IDisposable
         _logger = logger;
         _autoSave = new Debouncer(TimeSpan.FromSeconds(1), time);
     }
-
-    [ObservableProperty] private string _title = "";
     [ObservableProperty] private string _content = "";
     [ObservableProperty] private bool _isPreview;
     [ObservableProperty] private string? _saveError;
@@ -59,7 +57,6 @@ public sealed partial class NoteEditorViewModel : ObservableObject, IDisposable
         try
         {
             _note = note;
-            Title = note?.Title ?? "";
             Content = note?.Content ?? "";
         }
         finally
@@ -103,8 +100,6 @@ public sealed partial class NoteEditorViewModel : ObservableObject, IDisposable
         var summaries = await _repo.GetSummariesAsync(LinkParser.ExtractTargets(Content));
         return summaries.ToDictionary(s => s.Id, s => s.Title);
     }
-
-    partial void OnTitleChanged(string value) => MarkDirty();
     partial void OnContentChanged(string value) => MarkDirty();
 
     private void MarkDirty()
@@ -123,7 +118,6 @@ public sealed partial class NoteEditorViewModel : ObservableObject, IDisposable
             if (note is null || !IsDirty) return;
 
             var version = _version;
-            note.Title = Title;
             note.Content = Content;
             var snapshot = note.Clone();
             try

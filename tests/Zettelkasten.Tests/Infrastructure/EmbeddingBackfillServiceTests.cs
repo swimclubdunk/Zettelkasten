@@ -30,7 +30,7 @@ public sealed class EmbeddingBackfillServiceTests : IAsyncLifetime
     {
         _time.Advance(TimeSpan.FromSeconds(5));
         var n = await _notes.CreateAsync();
-        n.Title = title;
+        n.Content = title;
         n.Tags = [.. tags];
         await _notes.SaveAsync(n);
     }

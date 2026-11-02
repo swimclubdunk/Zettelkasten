@@ -67,7 +67,7 @@ public sealed class MainViewModelTests
         var first = _repo.Add("first");
         await _vm.InitializeAsync();
         var focused = false;
-        _vm.FocusTitleRequested += (_, _) => focused = true;
+        _vm.FocusEditorRequested += (_, _) => focused = true;
 
         await _vm.NewNoteCommand.ExecuteAsync(null);
 

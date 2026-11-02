@@ -39,6 +39,21 @@ public sealed class NoteRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Title_is_derived_from_first_line_of_content()
+    {
+        var target = await CreateNextAsync();
+        target.Content = "# Spaced repetition\n\nReview at growing intervals.";
+        await _repo.SaveAsync(target);
+        var source = await CreateNextAsync();
+        source.Content = $"see [[{target.Id}]]";
+        await _repo.SaveAsync(source);
+
+        Assert.Equal("Spaced repetition", (await _repo.GetSummariesAsync([target.Id]))[0].Title);
+        Assert.Equal("Spaced repetition", Assert.Single(await _repo.GetOutgoingLinksAsync(source.Id)).Title);
+        Assert.Equal("see [[" + target.Id + "]]", Assert.Single(await _repo.GetBacklinksAsync(target.Id)).Title);
+    }
+
+    [Fact]
     public async Task Create_twice_in_same_second_yields_distinct_ids()
     {
         var a = await _repo.CreateAsync();
@@ -52,8 +67,7 @@ public sealed class NoteRepositoryTests : IAsyncLifetime
     {
         var target = await CreateNextAsync();
         var note = await CreateNextAsync();
-        note.Title = "Spaced repetition";
-        note.Content = "Review at growing intervals.";
+        note.Content = "# Spaced repetition\nReview at growing intervals.";
         note.Tags = ["Learning", "learning ", "Deep Work", "  "];
         note.ManualLinks = [target.Id];
         _time.Advance(TimeSpan.FromMinutes(1));
@@ -62,7 +76,7 @@ public sealed class NoteRepositoryTests : IAsyncLifetime
         var loaded = (await _repo.GetAsync(note.Id))!;
 
         Assert.Equal("Spaced repetition", loaded.Title);
-        Assert.Equal("Review at growing intervals.", loaded.Content);
+        Assert.Equal("# Spaced repetition\nReview at growing intervals.", loaded.Content);
         Assert.Equal(new[] { "deep-work", "learning" }, loaded.Tags.Order());
         Assert.Equal(new[] { target.Id }, loaded.ManualLinks);
         Assert.Equal(_time.GetLocalNow().ToUnixTimeMilliseconds(), loaded.UpdatedAt.ToUnixTimeMilliseconds());
@@ -110,9 +124,8 @@ public sealed class NoteRepositoryTests : IAsyncLifetime
         var target = await CreateNextAsync();
         var inline = await CreateNextAsync();
         var manual = await CreateNextAsync();
-        inline.Title = "Inline";
-        inline.Content = $"[[{target.Id}]]";
-        manual.Title = "Manual";
+        inline.Content = $"Inline\n[[{target.Id}]]";
+        manual.Content = "Manual";
         manual.ManualLinks = [target.Id];
         await _repo.SaveAsync(inline);
         await _repo.SaveAsync(manual);
@@ -140,8 +153,7 @@ public sealed class NoteRepositoryTests : IAsyncLifetime
     public async Task Save_updates_fts_and_delete_removes_it()
     {
         var note = await CreateNextAsync();
-        note.Title = "Zettel";
-        note.Content = "forgetting curve";
+        note.Content = "Zettel\nforgetting curve";
         note.Tags = ["memory"];
         await _repo.SaveAsync(note);
 
@@ -160,7 +172,7 @@ public sealed class NoteRepositoryTests : IAsyncLifetime
     public async Task Save_reembeds_only_when_text_changes()
     {
         var note = await CreateNextAsync();
-        note.Title = "t";
+        note.Content = "t";
         await _repo.SaveAsync(note);
         var count = _embeddings.EmbedCount;
         Assert.True(_index.Count >= 1);
@@ -179,7 +191,7 @@ public sealed class NoteRepositoryTests : IAsyncLifetime
     {
         _embeddings.IsAvailable = false;
         var note = await CreateNextAsync();
-        note.Title = "offline";
+        note.Content = "offline";
         note.Tags = ["t"];
         await _repo.SaveAsync(note);
         Assert.Equal("offline", (await _repo.GetAsync(note.Id))!.Title);
@@ -207,11 +219,11 @@ public sealed class NoteRepositoryTests : IAsyncLifetime
     public async Task Failed_save_rolls_back_everything()
     {
         var note = await CreateNextAsync();
-        note.Title = "before";
+        note.Content = "before";
         await _repo.SaveAsync(note);
         await _db.ExecAsync("DROP TABLE NotesFts;"); // force a failure late in the transaction
 
-        note.Title = "after";
+        note.Content = "after";
         note.Tags = ["x"];
         await Assert.ThrowsAnyAsync<Exception>(() => _repo.SaveAsync(note));
 

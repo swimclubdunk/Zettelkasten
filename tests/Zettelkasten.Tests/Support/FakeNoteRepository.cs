@@ -20,7 +20,9 @@ public sealed class FakeNoteRepository(TimeProvider? time = null) : INoteReposit
     {
         var id = (20261102000000 + ++_counter).ToString(CultureInfo.InvariantCulture);
         var at = new DateTimeOffset(2026, 11, 2, 0, 0, 0, TimeSpan.Zero).AddSeconds(_counter);
-        var note = new Note { Id = id, Title = title, Content = content, Tags = [.. tags], CreatedAt = at, UpdatedAt = at };
+        // Notes have no title field: a given title becomes the first-line heading
+        if (title.Length > 0) content = content.Length == 0 ? $"# {title}" : $"# {title}\n{content}";
+        var note = new Note { Id = id, Content = content, Tags = [.. tags], CreatedAt = at, UpdatedAt = at };
         _notes[id] = note;
         return note.Clone();
     }

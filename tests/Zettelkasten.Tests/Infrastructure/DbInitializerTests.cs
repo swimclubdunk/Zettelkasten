@@ -1,4 +1,9 @@
 using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
+using Zettelkasten.Infrastructure;
+using Zettelkasten.Infrastructure.Data;
 using Microsoft.Extensions.Time.Testing;
 using Zettelkasten.Tests.Support;
 
@@ -13,6 +18,31 @@ public class DbInitializerTests
         var count = await db.ScalarAsync(
             "SELECT COUNT(*) FROM sqlite_master WHERE name IN ('Notes','Tags','NoteTags','NoteLinks','NoteEmbeddings','NotesFts')");
         Assert.Equal(6L, count);
+    }
+
+    [Fact]
+    public async Task Upgrade_moves_existing_titles_into_content()
+    {
+        var dir = TestDb.NewDirectory();
+        var paths = new AppPaths(dir, dir);
+        Directory.CreateDirectory(dir);
+        await using (var ctx = new AppDbContext(AppDbContext.CreateOptions(paths.ConnectionString)))
+        {
+            await ctx.GetService<IMigrator>().MigrateAsync("InitialCreate"); // schema as of the titled version
+            await ctx.Database.ExecuteSqlRawAsync(
+                "INSERT INTO Notes (Id, Title, Content, CreatedAtMs, UpdatedAtMs) VALUES " +
+                "('20261102000001', 'Old title', 'body', 0, 0), " +
+                "('20261102000002', 'Only title', '', 0, 0), " +
+                "('20261102000003', '', 'no title here', 0, 0)");
+        }
+
+        await using var db = await TestDb.CreateAsync(directory: dir);
+
+        Assert.Equal("# Old title\n\nbody", await db.ScalarAsync("SELECT Content FROM Notes WHERE Id = '20261102000001'"));
+        Assert.Equal("# Only title", await db.ScalarAsync("SELECT Content FROM Notes WHERE Id = '20261102000002'"));
+        Assert.Equal("no title here", await db.ScalarAsync("SELECT Content FROM Notes WHERE Id = '20261102000003'"));
+        Assert.Equal("no title here", await db.ScalarAsync("SELECT Title FROM Notes WHERE Id = '20261102000003'"));
+        Assert.Equal(1L, await db.ScalarAsync("SELECT COUNT(*) FROM NotesFts WHERE NotesFts MATCH '\"old\"*'"));
     }
 
     [Fact]

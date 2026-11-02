@@ -30,8 +30,7 @@ public sealed class SearchServiceTests : IAsyncLifetime
     {
         _time.Advance(TimeSpan.FromMinutes(1));
         var n = await _notes.CreateAsync();
-        n.Title = title;
-        n.Content = content;
+        n.Content = $"{title}\n{content}";
         n.Tags = [.. tags];
         await _notes.SaveAsync(n);
         return n;

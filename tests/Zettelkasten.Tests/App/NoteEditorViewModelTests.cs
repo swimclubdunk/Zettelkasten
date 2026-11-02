@@ -122,7 +122,7 @@ public sealed class NoteEditorViewModelTests : IDisposable
         _time.Advance(TimeSpan.FromSeconds(5));
         await _vm.PendingSave;
         Assert.Equal(0, _repo.SaveCount);
-        Assert.Equal("body", _vm.Content);
+        Assert.Equal("# t\nbody", _vm.Content);
     }
 
     [Fact]
@@ -131,7 +131,7 @@ public sealed class NoteEditorViewModelTests : IDisposable
         var a = _repo.Add("a");
         var b = _repo.Add("b");
         await _vm.LoadAsync(a);
-        _vm.Title = "edited";
+        _vm.Content = "edited";
         _time.Advance(TimeSpan.FromMilliseconds(300));
 
         await _vm.LoadAsync(b);
@@ -140,9 +140,9 @@ public sealed class NoteEditorViewModelTests : IDisposable
 
         var saved = Assert.Single(_repo.Saved);
         Assert.Equal(a.Id, saved.Id);
-        Assert.Equal("edited", saved.Title);
+        Assert.Equal("edited", saved.Content);
         Assert.Equal("b", (await _repo.GetAsync(b.Id))!.Title);
-        Assert.Equal("b", _vm.Title);
+        Assert.Equal("# b", _vm.Content);
         Assert.Equal(b.Id, _vm.NoteId);
     }
 

@@ -7,7 +7,7 @@ public class NoteTests
     [Fact]
     public void Clone_copies_lists_independently()
     {
-        var n = new Note { Id = "20261102143015", Title = "t", Tags = ["a"], ManualLinks = ["20261102143016"] };
+        var n = new Note { Id = "20261102143015", Content = "t", Tags = ["a"], ManualLinks = ["20261102143016"] };
         var c = n.Clone();
         c.Tags.Add("b");
         c.ManualLinks.Clear();
@@ -19,7 +19,7 @@ public class NoteTests
     [Fact]
     public void Display_titles_fall_back()
     {
-        Assert.Equal("(untitled)", new NoteSummary("1", " ", DateTimeOffset.Now).DisplayTitle);
+        Assert.Equal("(empty note)", new NoteSummary("1", " ", DateTimeOffset.Now).DisplayTitle);
         Assert.True(new LinkInfo("20261102143015", null, LinkKind.Inline).IsBroken);
         Assert.Equal("20261102143015", new LinkInfo("20261102143015", null, LinkKind.Inline).DisplayTitle);
     }
