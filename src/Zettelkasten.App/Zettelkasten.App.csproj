@@ -18,4 +18,9 @@
     <ProjectReference Include="..\Zettelkasten.Infrastructure\Zettelkasten.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.14" />
+  </ItemGroup>
+
 </Project>
