@@ -47,9 +47,14 @@ public sealed partial class NoteEditorViewModel : ObservableObject, IDisposable
     public event EventHandler<string>? OpenRequested;
 
     /// <summary>Saves pending edits of the current note first, then shows <paramref name="note"/>.</summary>
-    public async Task LoadAsync(Note? note)
+    /// <returns>
+    /// False when the pending edits could not be saved: the current note then stays loaded so nothing is lost,
+    /// unless <paramref name="discardUnsaved"/> says the user agreed to drop them.
+    /// </returns>
+    public async Task<bool> LoadAsync(Note? note, bool discardUnsaved = false)
     {
         await FlushAsync();
+        if (IsDirty && !discardUnsaved) return false;
         _loading = true;
         try
         {
@@ -67,6 +72,7 @@ public sealed partial class NoteEditorViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(NoteId));
         OnPropertyChanged(nameof(HasNote));
         NoteLoaded?.Invoke(this, EventArgs.Empty);
+        return true;
     }
 
     public async Task FlushAsync()
@@ -124,8 +130,12 @@ public sealed partial class NoteEditorViewModel : ObservableObject, IDisposable
             {
                 await _repo.SaveAsync(snapshot);
                 note.UpdatedAt = snapshot.UpdatedAt;
-                note.Tags = snapshot.Tags;               // repository normalizes these
-                note.ManualLinks = snapshot.ManualLinks;
+                if (_version == version)
+                {
+                    // Take the repository's normalized lists, unless a tag/link change arrived during the save
+                    note.Tags = snapshot.Tags;
+                    note.ManualLinks = snapshot.ManualLinks;
+                }
                 _savedVersion = version;
                 SaveError = null;
                 LastSavedAt = snapshot.UpdatedAt;

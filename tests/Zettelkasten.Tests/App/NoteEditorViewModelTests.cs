@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using Zettelkasten.App.ViewModels;
+using Zettelkasten.Core.Abstractions;
+using Zettelkasten.Core.Model;
 using Zettelkasten.Tests.Support;
 
 namespace Zettelkasten.Tests.App;
@@ -18,6 +20,81 @@ public sealed class NoteEditorViewModelTests : IDisposable
     }
 
     public void Dispose() => _vm.Dispose();
+
+    /// <summary>Holds the next save until released, so a save can be observed "in flight".</summary>
+    private sealed class GatedRepository(FakeNoteRepository inner) : INoteRepository
+    {
+        private TaskCompletionSource? _gate;
+        public TaskCompletionSource SaveStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public void HoldNextSave() => _gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        public void Release() => _gate?.SetResult();
+
+        public async Task SaveAsync(Note note, CancellationToken ct = default)
+        {
+            if (_gate is { } gate)
+            {
+                SaveStarted.TrySetResult();
+                await gate.Task;
+                _gate = null;
+            }
+            await inner.SaveAsync(note, ct);
+        }
+
+        public Task<Note> CreateAsync(CancellationToken ct = default) => inner.CreateAsync(ct);
+        public Task<Note?> GetAsync(string id, CancellationToken ct = default) => inner.GetAsync(id, ct);
+        public Task DeleteAsync(string id, CancellationToken ct = default) => inner.DeleteAsync(id, ct);
+        public Task<IReadOnlyList<NoteSummary>> GetRecentAsync(int count, CancellationToken ct = default) => inner.GetRecentAsync(count, ct);
+        public Task<IReadOnlyList<NoteSummary>> GetAllSummariesAsync(CancellationToken ct = default) => inner.GetAllSummariesAsync(ct);
+        public Task<IReadOnlyList<NoteSummary>> GetSummariesAsync(IReadOnlyList<string> ids, CancellationToken ct = default) => inner.GetSummariesAsync(ids, ct);
+        public Task<IReadOnlyList<LinkInfo>> GetOutgoingLinksAsync(string id, CancellationToken ct = default) => inner.GetOutgoingLinksAsync(id, ct);
+        public Task<IReadOnlyList<LinkInfo>> GetBacklinksAsync(string id, CancellationToken ct = default) => inner.GetBacklinksAsync(id, ct);
+        public Task<int> CountAsync(CancellationToken ct = default) => inner.CountAsync(ct);
+    }
+
+    [Fact]
+    public async Task Switching_note_after_failed_save_is_refused_and_keeps_edits()
+    {
+        var a = _repo.Add("a");
+        var b = _repo.Add("b");
+        await _vm.LoadAsync(a);
+        _vm.Content = "important";
+        _repo.FailNextSave = true;
+
+        var switched = await _vm.LoadAsync(b);
+
+        Assert.False(switched);
+        Assert.Equal(a.Id, _vm.NoteId);
+        Assert.Equal("important", _vm.Content);
+        Assert.Equal(NoteEditorViewModel.SaveFailedMessage, _vm.SaveError);
+
+        Assert.True(await _vm.LoadAsync(b, discardUnsaved: true));
+        Assert.Equal(b.Id, _vm.NoteId);
+    }
+
+    [Fact]
+    public async Task Tag_change_during_in_flight_autosave_is_kept()
+    {
+        var gated = new GatedRepository(_repo);
+        using var vm = new NoteEditorViewModel(gated, _time, NullLogger<NoteEditorViewModel>.Instance);
+        var note = _repo.Add("t");
+        await vm.LoadAsync(note);
+
+        gated.HoldNextSave();
+        vm.Content = "edited";
+        _time.Advance(TimeSpan.FromSeconds(1));
+        var autoSave = vm.PendingSave;
+        await gated.SaveStarted.Task;                       // auto-save holds the snapshot without "x"
+
+        var update = vm.UpdateAndSaveAsync(n => n.Tags.Add("x"));
+        gated.Release();
+        await autoSave;
+        await update;
+
+        Assert.Contains("x", vm.CurrentNote!.Tags);
+        Assert.Contains("x", (await _repo.GetAsync(note.Id))!.Tags);
+        Assert.Equal("edited", (await _repo.GetAsync(note.Id))!.Content);
+    }
 
     [Fact]
     public async Task Edits_are_saved_after_one_second_of_inactivity()

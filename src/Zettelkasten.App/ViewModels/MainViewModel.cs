@@ -72,7 +72,7 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task NewNote()
     {
-        await Editor.FlushAsync();
+        if (!await ReleaseCurrentNoteAsync()) return;
         var note = await _notes.CreateAsync();
         NoteCount = await _notes.CountAsync();
         await Search.RefreshAsync();
@@ -83,7 +83,8 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanGoBack))]
     private async Task Back()
     {
-        if (_history.GoBack() is { } id) await OpenCoreAsync(id, recordHistory: false);
+        if (_history.GoBack() is { } id && !await OpenCoreAsync(id, recordHistory: false))
+            _history.GoForward(); // stayed on the current note, so undo the history move
         NotifyNavigation();
     }
 
@@ -92,7 +93,8 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanGoForward))]
     private async Task Forward()
     {
-        if (_history.GoForward() is { } id) await OpenCoreAsync(id, recordHistory: false);
+        if (_history.GoForward() is { } id && !await OpenCoreAsync(id, recordHistory: false))
+            _history.GoBack();
         NotifyNavigation();
     }
 
@@ -112,7 +114,7 @@ public sealed partial class MainViewModel : ObservableObject
                        string.Join("\n", backlinks.Select(b => $"• {b.DisplayTitle}").Distinct());
         if (!_dialogs.Confirm("Delete note", message)) return;
 
-        await Editor.LoadAsync(null); // flushes pending edits first
+        await Editor.LoadAsync(null, discardUnsaved: true); // the note is being deleted anyway
         await _notes.DeleteAsync(note.Id);
         var previous = _history.Remove(note.Id);
         NoteCount = await _notes.CountAsync();
@@ -149,21 +151,38 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void TogglePreview() => Editor.IsPreview = !Editor.IsPreview;
 
-    private async Task OpenCoreAsync(string id, bool recordHistory)
+    /// <returns>False when the note was not opened (missing, or the user kept unsaved edits).</returns>
+    private async Task<bool> OpenCoreAsync(string id, bool recordHistory)
     {
-        if (Editor.NoteId == id) return;
+        if (Editor.NoteId == id) return true;
         var note = await _notes.GetAsync(id);
         if (note is null)
         {
             StatusMessage = $"Note {id} does not exist.";
-            return;
+            return false;
         }
-        await Editor.LoadAsync(note);
+        if (!await ReleaseCurrentNoteAsync() || !await Editor.LoadAsync(note)) return false;
         if (recordHistory) _history.Visit(id);
         Search.SelectById(id);
         StatusMessage = null;
         await Panel.RefreshAsync();
         NotifyNavigation();
+        return true;
+    }
+
+    /// <summary>
+    /// Saves the open note's pending edits. If that fails, asks whether to discard them;
+    /// returns false when the user wants to keep them (the caller must then stay on the note).
+    /// </summary>
+    private async Task<bool> ReleaseCurrentNoteAsync()
+    {
+        await Editor.FlushAsync();
+        if (!Editor.IsDirty) return true;
+        if (!_dialogs.Confirm("Unsaved changes",
+                "Your latest changes to this note could not be saved.\n\nDiscard them and continue?"))
+            return false;
+        await Editor.LoadAsync(null, discardUnsaved: true);
+        return true;
     }
 
     private async Task OnSavedAsync()

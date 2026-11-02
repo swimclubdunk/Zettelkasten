@@ -122,6 +122,43 @@ public sealed class MainViewModelTests
     }
 
     [Fact]
+    public async Task Navigating_away_after_failed_save_asks_and_stays_when_declined()
+    {
+        var a = _repo.Add("a");
+        var b = _repo.Add("b");
+        await _vm.InitializeAsync();          // opens b
+        _vm.Editor.Content = "unsaved";
+        _repo.FailNextSave = true;
+        _dialogs.ConfirmResult = false;
+
+        await _vm.OpenAsync(a.Id);
+
+        Assert.Equal(b.Id, _vm.Editor.NoteId);
+        Assert.Equal("unsaved", _vm.Editor.Content);
+        Assert.Single(_dialogs.Confirmations);
+
+        _repo.FailNextSave = true;
+        _dialogs.ConfirmResult = true;
+        await _vm.OpenAsync(a.Id);
+        Assert.Equal(a.Id, _vm.Editor.NoteId);
+    }
+
+    [Fact]
+    public async Task New_note_after_failed_save_creates_nothing_when_declined()
+    {
+        _repo.Add("a");
+        await _vm.InitializeAsync();
+        _vm.Editor.Content = "unsaved";
+        _repo.FailNextSave = true;
+        _dialogs.ConfirmResult = false;
+
+        await _vm.NewNoteCommand.ExecuteAsync(null);
+
+        Assert.Equal(1, await _repo.CountAsync());
+        Assert.Equal("unsaved", _vm.Editor.Content);
+    }
+
+    [Fact]
     public async Task Delete_cancelled_keeps_note()
     {
         var a = _repo.Add("a");
