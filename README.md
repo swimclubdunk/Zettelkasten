@@ -18,10 +18,11 @@ Without the model the app still works, but search is keyword-only and tags get n
 ## Publish a standalone copy
 
 ```powershell
-dotnet publish src/Zettelkasten.App -c Release -r win-x64 --self-contained -o publish
+dotnet publish src/Zettelkasten.App -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o publish
 ```
 
-Run `publish\Zettelkasten.exe`. The folder can be copied anywhere; no .NET installation is needed.
+Run `publish\Zettelkasten.exe` (one ~190 MB file, no .NET installation needed). Keep the `models` folder next to
+the exe for semantic search; copy both together if you move it.
 
 ## Where data lives
 
