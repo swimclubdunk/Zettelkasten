@@ -1,0 +1,159 @@
+using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Zettelkasten.App.Services;
+using Zettelkasten.Core.Abstractions;
+using Zettelkasten.Core.Common;
+using Zettelkasten.Core.Model;
+using Zettelkasten.Core.Tags;
+
+namespace Zettelkasten.App.ViewModels;
+
+public sealed partial class NotePanelViewModel : ObservableObject, IDisposable
+{
+    private readonly INoteRepository _notes;
+    private readonly ITagRepository _tags;
+    private readonly ITagSuggestionService _suggestions;
+    private readonly NoteEditorViewModel _editor;
+    private readonly IDialogService _dialogs;
+    private readonly Debouncer _suggestDebounce;
+
+    public NotePanelViewModel(INoteRepository notes, ITagRepository tags, ITagSuggestionService suggestions,
+        NoteEditorViewModel editor, IDialogService dialogs, TimeProvider time)
+    {
+        _notes = notes;
+        _tags = tags;
+        _suggestions = suggestions;
+        _editor = editor;
+        _dialogs = dialogs;
+        _suggestDebounce = new Debouncer(TimeSpan.FromMilliseconds(200), time);
+    }
+
+    public ObservableCollection<string> Tags { get; } = [];
+    public ObservableCollection<LinkInfo> Related { get; } = [];
+    public ObservableCollection<LinkInfo> Outgoing { get; } = [];
+    public ObservableCollection<LinkInfo> Backlinks { get; } = [];
+    public ObservableCollection<TagSuggestion> Suggestions { get; } = [];
+
+    [ObservableProperty] private string _tagInput = "";
+    [ObservableProperty] private bool _canCreateTag;
+
+    internal Task PendingSuggest { get; private set; } = Task.CompletedTask;
+
+    public event EventHandler<string>? OpenRequested;
+
+    private string NormalizedInput => TagNormalizer.Normalize(TagInput);
+
+    public async Task RefreshAsync()
+    {
+        var note = _editor.CurrentNote;
+        Replace(Tags, note?.Tags ?? []);
+        if (note is null)
+        {
+            Related.Clear(); Outgoing.Clear(); Backlinks.Clear();
+            return;
+        }
+        var outgoing = await _notes.GetOutgoingLinksAsync(note.Id);
+        var backlinks = await _notes.GetBacklinksAsync(note.Id);
+        Replace(Related, outgoing.Where(l => l.Kind == LinkKind.Manual));
+        Replace(Outgoing, outgoing.Where(l => l.Kind == LinkKind.Inline));
+        Replace(Backlinks, backlinks);
+    }
+
+    partial void OnTagInputChanged(string value)
+    {
+        CanCreateTag = false;
+        PendingSuggest = _suggestDebounce.Trigger(async () => ShowSuggestions(await _suggestions.SuggestAsync(TagInput)));
+    }
+
+    [RelayCommand]
+    private async Task AddTagFromInput()
+    {
+        var name = NormalizedInput;
+        if (name.Length == 0) return;
+        var result = await _suggestions.SuggestAsync(TagInput);
+        if (result.ExactMatch is not null) { await AddTagAsync(result.ExactMatch.Name); return; }
+        if (result.Similar.Count > 0) { ShowSuggestions(result); return; } // let the user decide
+        await AddTagAsync(name);
+    }
+
+    [RelayCommand]
+    private Task AcceptSuggestion(TagSuggestion suggestion) => AddTagAsync(suggestion.Tag.Name);
+
+    [RelayCommand]
+    private Task CreateTagAnyway() => AddTagAsync(NormalizedInput);
+
+    [RelayCommand]
+    private async Task RemoveTag(string name)
+    {
+        await _editor.UpdateAndSaveAsync(n => n.Tags.Remove(name));
+        await RefreshAsync();
+    }
+
+    [RelayCommand]
+    private async Task DeleteTagEverywhere(string name)
+    {
+        if (!_dialogs.Confirm("Delete tag", $"Remove the tag \"{name}\" from all notes and delete it?\n\nThis cannot be undone."))
+            return;
+        var tag = (await _tags.GetAllAsync()).FirstOrDefault(t => t.Name == name);
+        if (tag is null) return;
+        await _editor.FlushAsync();
+        await _tags.DeleteAsync(tag.Id);
+        _editor.CurrentNote?.Tags.Remove(name);
+        await RefreshAsync();
+    }
+
+    [RelayCommand]
+    private async Task AddManualLink()
+    {
+        var note = _editor.CurrentNote;
+        if (note is null) return;
+        var id = _dialogs.PickNote("Link to note", note.Id);
+        if (id is null || id == note.Id) return;
+        await _editor.UpdateAndSaveAsync(n => { if (!n.ManualLinks.Contains(id)) n.ManualLinks.Add(id); });
+        await RefreshAsync();
+    }
+
+    [RelayCommand]
+    private async Task RemoveManualLink(LinkInfo link)
+    {
+        await _editor.UpdateAndSaveAsync(n => n.ManualLinks.Remove(link.NoteId));
+        await RefreshAsync();
+    }
+
+    [RelayCommand]
+    private void OpenLink(LinkInfo link)
+    {
+        if (!link.IsBroken) OpenRequested?.Invoke(this, link.NoteId);
+    }
+
+    private async Task AddTagAsync(string name)
+    {
+        if (name.Length == 0 || _editor.CurrentNote is null) return;
+        await _editor.UpdateAndSaveAsync(n => { if (!n.Tags.Contains(name)) n.Tags.Add(name); });
+        TagInput = "";
+        _suggestDebounce.Cancel();
+        Suggestions.Clear();
+        CanCreateTag = false;
+        await RefreshAsync();
+    }
+
+    private void ShowSuggestions(TagSuggestions result)
+    {
+        Suggestions.Clear();
+        if (result.ExactMatch is not null)
+            Suggestions.Add(new TagSuggestion(result.ExactMatch, 1f, false));
+        else
+            foreach (var s in result.Similar) Suggestions.Add(s);
+        var name = NormalizedInput;
+        CanCreateTag = result.ExactMatch is null && name.Length > 0 && !Tags.Contains(name);
+    }
+
+    private static void Replace<T>(ObservableCollection<T> target, IEnumerable<T> items)
+    {
+        target.Clear();
+        foreach (var item in items) target.Add(item);
+    }
+
+    public void Dispose() => _suggestDebounce.Dispose();
+}
