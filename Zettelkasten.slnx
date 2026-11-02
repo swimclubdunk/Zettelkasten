@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Zettelkasten.App/Zettelkasten.App.csproj" />
+    <Project Path="src/Zettelkasten.Core/Zettelkasten.Core.csproj" />
+    <Project Path="src/Zettelkasten.Infrastructure/Zettelkasten.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Zettelkasten.Tests/Zettelkasten.Tests.csproj" />
+  </Folder>
+</Solution>
