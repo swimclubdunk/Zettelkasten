@@ -486,3 +486,6 @@ models/
 
 design.db
 publish/
+
+# Source folder named Backup must not be caught by the VS "Backup*/" rule above
+!src/**/Backup/
