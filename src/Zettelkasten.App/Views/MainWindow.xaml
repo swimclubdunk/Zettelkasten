@@ -1,0 +1,96 @@
+﻿<Window x:Class="Zettelkasten.App.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:Zettelkasten.App.Views"
+        Title="Zettelkasten" Height="820" Width="1320" MinWidth="900" MinHeight="500"
+        Background="{StaticResource WindowBrush}" Foreground="{StaticResource TextBrush}"
+        FontFamily="Segoe UI" FontSize="13">
+    <Window.InputBindings>
+        <KeyBinding Key="N" Modifiers="Control" Command="{Binding NewNoteCommand}" />
+        <KeyBinding Key="S" Modifiers="Control" Command="{Binding Editor.SaveCommand}" />
+        <KeyBinding Key="E" Modifiers="Control" Command="{Binding TogglePreviewCommand}" />
+        <KeyBinding Key="L" Modifiers="Control" Command="{Binding Panel.AddManualLinkCommand}" />
+        <KeyBinding Key="Left" Modifiers="Alt" Command="{Binding BackCommand}" />
+        <KeyBinding Key="Right" Modifiers="Alt" Command="{Binding ForwardCommand}" />
+    </Window.InputBindings>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource LineBrush}"
+                BorderThickness="0,0,0,1" Padding="10,8">
+            <DockPanel>
+                <Button DockPanel.Dock="Left" Content="â†" FontSize="16" Style="{StaticResource IconButton}"
+                        Command="{Binding BackCommand}" ToolTip="Back (Alt+â†)" />
+                <Button DockPanel.Dock="Left" Content="â†’" FontSize="16" Style="{StaticResource IconButton}"
+                        Command="{Binding ForwardCommand}" ToolTip="Forward (Alt+â†’)" Margin="0,0,8,0" />
+                <Menu DockPanel.Dock="Right" Background="Transparent" VerticalAlignment="Center" Margin="6,0,0,0">
+                    <MenuItem Header="â‹¯" FontSize="16" ToolTip="More">
+                        <MenuItem Header="Delete noteâ€¦" Command="{Binding DeleteNoteCommand}" />
+                        <MenuItem Header="Export backupâ€¦" Command="{Binding ExportBackupCommand}" />
+                    </MenuItem>
+                </Menu>
+                <Button DockPanel.Dock="Right" Content="+ New" Padding="14,4" Margin="8,0,0,0"
+                        Command="{Binding NewNoteCommand}" ToolTip="New note (Ctrl+N)" />
+                <TextBox x:Name="SearchBox" Style="{StaticResource InputBox}" FontSize="14"
+                         Text="{Binding Search.Query, UpdateSourceTrigger=PropertyChanged}"
+                         PreviewKeyDown="SearchBox_PreviewKeyDown"
+                         ToolTip="Search notes (Ctrl+K) â€“ #tag filters by tag, id:2026â€¦ finds IDs" />
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="290" MinWidth="180" />
+                <ColumnDefinition Width="4" />
+                <ColumnDefinition Width="*" MinWidth="320" />
+                <ColumnDefinition Width="4" />
+                <ColumnDefinition Width="290" MinWidth="200" />
+            </Grid.ColumnDefinitions>
+
+            <ListBox x:Name="ResultsList" Grid.Column="0" BorderThickness="0" Background="{StaticResource WindowBrush}"
+                     ItemsSource="{Binding Search.Results}" SelectedItem="{Binding Search.Selected}"
+                     HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Margin="6,6">
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                    <TextBlock Text="ðŸ”¤" ToolTip="Keyword match"
+                                               Visibility="{Binding MatchedKeyword, Converter={StaticResource BoolToVisibility}}" />
+                                    <TextBlock Text="ðŸ§ " ToolTip="Semantic match" Margin="3,0,0,0"
+                                               Visibility="{Binding MatchedSemantic, Converter={StaticResource BoolToVisibility}}" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding Note.DisplayTitle}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                            </DockPanel>
+                            <TextBlock Text="{Binding Note.Id}" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" Background="{StaticResource LineBrush}" />
+            <views:NoteEditorView x:Name="EditorView" Grid.Column="2" DataContext="{Binding Editor}" />
+            <GridSplitter Grid.Column="3" HorizontalAlignment="Stretch" Background="{StaticResource LineBrush}" />
+            <views:NotePanelView Grid.Column="4" DataContext="{Binding Panel}" />
+        </Grid>
+
+        <Border Grid.Row="2" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource LineBrush}"
+                BorderThickness="0,1,0,0" Padding="12,4">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Right" Text="{Binding ModelStatus}" Foreground="{StaticResource MutedBrush}" />
+                <TextBlock DockPanel.Dock="Right" Foreground="{StaticResource MutedBrush}"
+                           Text="{Binding NoteCount, StringFormat='{}{0} notes  Â·  '}" />
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="{Binding Editor.SaveError}" Foreground="{StaticResource ErrorBrush}" FontWeight="SemiBold" Margin="0,0,12,0" />
+                    <TextBlock Text="{Binding Editor.LastSavedAt, StringFormat='Saved {0:HH:mm}', TargetNullValue=''}" Foreground="{StaticResource MutedBrush}" Margin="0,0,12,0" />
+                    <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource MutedBrush}" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

@@ -1,0 +1,123 @@
+<UserControl x:Class="Zettelkasten.App.Views.NotePanelView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:model="clr-namespace:Zettelkasten.Core.Model;assembly=Zettelkasten.Core"
+             Background="{StaticResource WindowBrush}">
+    <UserControl.Resources>
+        <!-- One template for every link list; broken links are red with a warning sign -->
+        <DataTemplate x:Key="LinkTemplate" DataType="{x:Type model:LinkInfo}">
+            <Button Style="{StaticResource LinkButton}" ToolTip="{Binding NoteId}"
+                    Command="{Binding DataContext.OpenLinkCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                    CommandParameter="{Binding}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock x:Name="Warn" Text="⚠ " Visibility="Collapsed" />
+                    <TextBlock x:Name="Label" Text="{Binding DisplayTitle}" TextTrimming="CharacterEllipsis" />
+                    <TextBlock x:Name="Kind" Text="  · related" Foreground="{StaticResource MutedBrush}" Visibility="Collapsed" />
+                </StackPanel>
+            </Button>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsBroken}" Value="True">
+                    <Setter TargetName="Warn" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="Warn" Property="Foreground" Value="{StaticResource ErrorBrush}" />
+                    <Setter TargetName="Label" Property="Foreground" Value="{StaticResource ErrorBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="Manual">
+                    <Setter TargetName="Kind" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="14,0,14,14">
+            <TextBlock Text="TAGS" Style="{StaticResource SectionHeader}" />
+            <ItemsControl ItemsSource="{Binding Tags}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource Chip}"
+                                Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=ItemsControl}}">
+                            <Border.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Delete tag everywhere…"
+                                              Command="{Binding PlacementTarget.Tag.DeleteTagEverywhereCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                              CommandParameter="{Binding}" />
+                                </ContextMenu>
+                            </Border.ContextMenu>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding StringFormat='#{0}'}" VerticalAlignment="Center" />
+                                <Button Content="✕" Style="{StaticResource IconButton}" ToolTip="Remove from this note"
+                                        Command="{Binding DataContext.RemoveTagCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        CommandParameter="{Binding}" />
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <TextBox Style="{StaticResource InputBox}" Margin="0,4,0,0"
+                     Text="{Binding TagInput, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="Type a tag and press Enter">
+                <TextBox.InputBindings>
+                    <KeyBinding Key="Enter" Command="{Binding AddTagFromInputCommand}" />
+                </TextBox.InputBindings>
+            </TextBox>
+
+            <TextBlock Text="Similar existing tags:" Foreground="{StaticResource MutedBrush}" Margin="0,6,0,2"
+                       Visibility="{Binding HasItems, ElementName=SuggestionList, Converter={StaticResource BoolToVisibility}}" />
+            <ItemsControl x:Name="SuggestionList" ItemsSource="{Binding Suggestions}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Button Style="{StaticResource LinkButton}"
+                                Command="{Binding DataContext.AcceptSuggestionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                CommandParameter="{Binding}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding Tag.Name, StringFormat='#{0}'}" FontWeight="SemiBold" />
+                                <TextBlock x:Name="Score" Text="{Binding Score, StringFormat='  ({0:0.00})'}" Foreground="{StaticResource MutedBrush}" />
+                                <TextBlock x:Name="Abbrev" Text="  (abbreviation)" Foreground="{StaticResource MutedBrush}" Visibility="Collapsed" />
+                            </StackPanel>
+                        </Button>
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding IsInitialsMatch}" Value="True">
+                                <Setter TargetName="Score" Property="Visibility" Value="Collapsed" />
+                                <Setter TargetName="Abbrev" Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button Style="{StaticResource LinkButton}" Command="{Binding CreateTagAnywayCommand}"
+                    Visibility="{Binding CanCreateTag, Converter={StaticResource BoolToVisibility}}">
+                <TextBlock>
+                    <Run Text="Create '" /><Run Text="{Binding TagInput, Mode=OneWay}" /><Run Text="' anyway" />
+                </TextBlock>
+            </Button>
+
+            <DockPanel Margin="0,16,0,6">
+                <Button DockPanel.Dock="Right" Content="+ link note" Style="{StaticResource LinkButton}"
+                        Command="{Binding AddManualLinkCommand}" ToolTip="Add a related note (Ctrl+L)" />
+                <TextBlock Text="RELATED" Style="{StaticResource SectionHeader}" Margin="0" />
+            </DockPanel>
+            <ItemsControl ItemsSource="{Binding Related}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Content="✕" Style="{StaticResource IconButton}" ToolTip="Remove link"
+                                    Command="{Binding DataContext.RemoveManualLinkCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}" />
+                            <ContentControl Content="{Binding}" ContentTemplate="{StaticResource LinkTemplate}" />
+                        </DockPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <TextBlock Text="OUTGOING" Style="{StaticResource SectionHeader}" />
+            <ItemsControl ItemsSource="{Binding Outgoing}" ItemTemplate="{StaticResource LinkTemplate}" />
+
+            <TextBlock Text="BACKLINKS" Style="{StaticResource SectionHeader}" />
+            <ItemsControl ItemsSource="{Binding Backlinks}" ItemTemplate="{StaticResource LinkTemplate}" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,24 @@
+<Window x:Class="Zettelkasten.App.Views.NotePickerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Width="480" Height="420" WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{StaticResource SurfaceBrush}" FontFamily="Segoe UI" FontSize="13">
+    <DockPanel Margin="12">
+        <TextBox x:Name="QueryBox" DockPanel.Dock="Top" Style="{StaticResource InputBox}"
+                 TextChanged="QueryBox_TextChanged" PreviewKeyDown="QueryBox_PreviewKeyDown" />
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+            <Button Content="Link" IsDefault="True" Click="Ok_Click" Padding="16,4" Margin="0,0,8,0" />
+            <Button Content="Cancel" IsCancel="True" Padding="16,4" />
+        </StackPanel>
+        <ListBox x:Name="ResultsList" Margin="0,8,0,0" MouseDoubleClick="Ok_Click" HorizontalContentAlignment="Stretch">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <DockPanel Margin="2,3">
+                        <TextBlock DockPanel.Dock="Right" Text="{Binding Note.Id}" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                        <TextBlock Text="{Binding Note.DisplayTitle}" TextTrimming="CharacterEllipsis" />
+                    </DockPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </DockPanel>
+</Window>
