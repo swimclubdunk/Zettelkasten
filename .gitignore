@@ -483,3 +483,5 @@ $RECYCLE.BIN/
 
 # Embedding model (fetched by scripts/fetch-model.ps1)
 models/
+
+design.db
