@@ -67,7 +67,7 @@
                                 </StackPanel>
                                 <TextBlock Text="{Binding Note.DisplayTitle}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                             </DockPanel>
-                            <TextBlock Text="{Binding Note.Id}" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                            <TextBlock Text="{Binding Note.Id}" Foreground="{StaticResource FaintBrush}" FontSize="10" />
                         </StackPanel>
                     </DataTemplate>
                 </ListBox.ItemTemplate>

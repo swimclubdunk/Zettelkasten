@@ -14,7 +14,7 @@
         <DockPanel Grid.Row="0" Margin="20,14,20,0" Visibility="{Binding HasNote, Converter={StaticResource BoolToVisibility}}">
             <ToggleButton DockPanel.Dock="Right" IsChecked="{Binding IsPreview}" Content="Preview" Padding="10,2"
                           ToolTip="Switch between editing and preview (Ctrl+E)" />
-            <TextBlock Text="{Binding NoteId}" Foreground="{StaticResource MutedBrush}" FontFamily="Consolas"
+            <TextBlock Text="{Binding NoteId}" Foreground="{StaticResource FaintBrush}" FontFamily="Consolas" FontSize="11"
                        VerticalAlignment="Center" />
         </DockPanel>
 

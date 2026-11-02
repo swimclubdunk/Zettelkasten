@@ -14,7 +14,7 @@
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <DockPanel Margin="2,3">
-                        <TextBlock DockPanel.Dock="Right" Text="{Binding Note.Id}" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                        <TextBlock DockPanel.Dock="Right" Text="{Binding Note.Id}" Foreground="{StaticResource FaintBrush}" FontSize="10" />
                         <TextBlock Text="{Binding Note.DisplayTitle}" TextTrimming="CharacterEllipsis" />
                     </DockPanel>
                 </DataTemplate>

@@ -6,6 +6,8 @@
     <SolidColorBrush x:Key="LineBrush" Color="#E3E1DA" />
     <SolidColorBrush x:Key="TextBrush" Color="#1F2328" />
     <SolidColorBrush x:Key="MutedBrush" Color="#6B6F76" />
+    <!-- Note IDs: present but barely there -->
+    <SolidColorBrush x:Key="FaintBrush" Color="#B4B7BC" />
     <SolidColorBrush x:Key="AccentBrush" Color="#2F6FDF" />
     <SolidColorBrush x:Key="AccentSoftBrush" Color="#E8F0FD" />
     <SolidColorBrush x:Key="ErrorBrush" Color="#C62828" />
