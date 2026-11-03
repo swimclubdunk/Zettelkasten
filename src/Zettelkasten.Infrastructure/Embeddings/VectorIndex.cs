@@ -14,6 +14,7 @@ public sealed class VectorIndex
     public void Set(string id, float[] vector) => _vectors[id] = vector;
     public void Remove(string id) => _vectors.TryRemove(id, out _);
     public void Clear() => _vectors.Clear();
+    public float[]? Get(string id) => _vectors.GetValueOrDefault(id);
 
     public IReadOnlyList<VectorHit> Search(float[] query, float minScore, int limit) =>
         _vectors

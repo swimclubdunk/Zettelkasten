@@ -55,6 +55,33 @@ public class RealModelThresholdTests(ITestOutputHelper output)
     }
 
     [SkippableFact]
+    public async Task Similar_notes_threshold_keeps_related_notes_and_drops_unrelated_ones()
+    {
+        using var model = await LoadModelAsync();
+        Skip.If(model is null, "Run scripts/fetch-model.ps1 first.");
+
+        string[] related =
+        [
+            "Active recall\nTesting yourself beats rereading; retrieving a fact strengthens the memory of it.",
+            "Interleaving practice\nMixing topics in one study session improves long-term retention.",
+        ];
+        string[] unrelated =
+        [
+            "Sourdough bread\nFeed the starter, fold the dough, bake at 250 degrees.",
+            "Quarterly tax deadlines\nVAT returns are due ten days after the quarter ends.",
+            "Bike chain maintenance\nClean and lube the chain every few hundred kilometres.",
+        ];
+        var note = model.Embed("Spaced repetition\nReviewing at growing intervals keeps facts in long-term recall.");
+        // Known miss: related in idea but not in wording (scores ~0.23); printed for reference only
+        const string leitner = "Leitner boxes\nFlashcards move to a less frequent box each time you answer them correctly.";
+        float Score(string text) => VectorMath.Dot(note, model.Embed(text));
+        foreach (var t in related.Append(leitner).Concat(unrelated)) output.WriteLine($"{Score(t):0.000}  {t.Split('\n')[0]}");
+
+        Assert.All(related, t => Assert.True(Score(t) >= SemanticSettings.SimilarNoteMinScore, t));
+        Assert.All(unrelated, t => Assert.True(Score(t) < SemanticSettings.SimilarNoteMinScore, t));
+    }
+
+    [SkippableFact]
     public async Task Tag_suggestion_scores_for_typical_near_duplicates()
     {
         using var model = await LoadModelAsync();

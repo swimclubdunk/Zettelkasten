@@ -68,6 +68,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         _modelLoadCompleted = true;
         UpdateModelStatus();
+        Run(Panel.RefreshAsync); // similar notes need the model
     }
 
     [RelayCommand]

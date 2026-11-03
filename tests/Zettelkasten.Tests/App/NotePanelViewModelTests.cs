@@ -30,6 +30,8 @@ public sealed class NotePanelViewModelTests : IDisposable
     private readonly StubSuggestions _suggest = new();
     private readonly StubTags _tags = new();
     private readonly FakeDialogService _dialogs = new();
+    private readonly FakeSimilarNotesService _similar = new();
+    private readonly FakeEmbeddingService _embeddings = new();
     private readonly NoteEditorViewModel _editor;
     private readonly NotePanelViewModel _vm;
 
@@ -37,7 +39,7 @@ public sealed class NotePanelViewModelTests : IDisposable
     {
         _repo = new FakeNoteRepository(_time);
         _editor = new NoteEditorViewModel(_repo, _time, NullLogger<NoteEditorViewModel>.Instance);
-        _vm = new NotePanelViewModel(_repo, _tags, _suggest, _editor, _dialogs, _time);
+        _vm = new NotePanelViewModel(_repo, _tags, _suggest, _similar, _embeddings, _editor, _dialogs, _time);
     }
 
     public void Dispose() { _vm.Dispose(); _editor.Dispose(); }
@@ -66,6 +68,43 @@ public sealed class NotePanelViewModelTests : IDisposable
         Assert.Equal(2, _vm.Outgoing.Count);
         Assert.Contains(_vm.Outgoing, l => l.IsBroken);
         Assert.Equal("Fan", Assert.Single(_vm.Backlinks).Title);
+    }
+
+    [Fact]
+    public async Task Refresh_lists_similar_notes_for_the_open_note()
+    {
+        var other = _repo.Add("Other");
+        var note = _repo.Add("Note");
+        _similar.Result.Add(new SimilarNote(new NoteSummary(other.Id, "Other", other.UpdatedAt), 0.7f));
+
+        await OpenAsync(note);
+
+        Assert.Equal(note.Id, Assert.Single(_similar.Requests));
+        Assert.Equal(other.Id, Assert.Single(_vm.Similar).Note.Id);
+        Assert.True(_vm.IsSemanticAvailable);
+    }
+
+    [Fact]
+    public async Task Linking_a_similar_note_adds_a_manual_link()
+    {
+        var other = _repo.Add("Other");
+        var note = await OpenAsync(_repo.Add("Note"));
+        var suggestion = new SimilarNote(new NoteSummary(other.Id, "Other", other.UpdatedAt), 0.7f);
+        _similar.Result.Add(suggestion);
+
+        await _vm.LinkSimilarCommand.ExecuteAsync(suggestion);
+
+        Assert.Contains(other.Id, (await _repo.GetAsync(note.Id))!.ManualLinks);
+        Assert.Equal(other.Id, Assert.Single(_vm.Related).NoteId);
+    }
+
+    [Fact]
+    public async Task Without_the_model_similar_notes_are_empty_and_flagged()
+    {
+        _embeddings.IsAvailable = false;
+        await OpenAsync(_repo.Add("Note"));
+        Assert.Empty(_vm.Similar);
+        Assert.False(_vm.IsSemanticAvailable);
     }
 
     [Fact]

@@ -1,4 +1,5 @@
 using Zettelkasten.Core.Model;
+using Zettelkasten.Core.Search;
 
 namespace Zettelkasten.Core.Abstractions;
 
@@ -30,6 +31,13 @@ public interface ITagRepository
 public interface ISearchService
 {
     Task<IReadOnlyList<SearchResult>> SearchAsync(string query, CancellationToken ct = default);
+}
+
+public interface ISimilarNotesService
+{
+    /// <summary>Notes closest in meaning that aren't linked to or from <paramref name="noteId"/> yet, best first.
+    /// Empty when the model is unavailable or the note has no embedding.</summary>
+    Task<IReadOnlyList<SimilarNote>> FindAsync(string noteId, int limit = SemanticSettings.MaxSimilarNotes, CancellationToken ct = default);
 }
 
 public interface IEmbeddingService

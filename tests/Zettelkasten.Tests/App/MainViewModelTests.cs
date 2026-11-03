@@ -30,7 +30,8 @@ public sealed class MainViewModelTests
         _repo = new FakeNoteRepository(_time);
         var editor = new NoteEditorViewModel(_repo, _time, NullLogger<NoteEditorViewModel>.Instance);
         var search = new SearchViewModel(new FakeSearchService(_repo), _time, NullLogger<SearchViewModel>.Instance);
-        var panel = new NotePanelViewModel(_repo, new TagRepositoryStub(), new SuggestionStub(), editor, _dialogs, _time);
+        var panel = new NotePanelViewModel(_repo, new TagRepositoryStub(), new SuggestionStub(),
+            new FakeSimilarNotesService(), _embeddings, editor, _dialogs, _time);
         _vm = new MainViewModel(_repo, _embeddings, _backup, _dialogs, search, editor, panel, _time,
             NullLogger<MainViewModel>.Instance);
     }

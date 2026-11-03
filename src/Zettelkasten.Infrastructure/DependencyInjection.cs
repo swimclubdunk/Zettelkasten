@@ -25,6 +25,7 @@ public static class DependencyInjection
         services.AddSingleton<INoteRepository, NoteRepository>();
         services.AddSingleton<ITagRepository, TagRepository>();
         services.AddSingleton<ISearchService, SearchService>();
+        services.AddSingleton<ISimilarNotesService, SimilarNotesService>();
         services.AddSingleton<ITagSuggestionService, TagSuggestionService>();
         services.AddSingleton<IBackupService, BackupService>();
         services.AddSingleton<DbInitializer>();

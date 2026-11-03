@@ -113,6 +113,29 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
 
+            <TextBlock Text="SIMILAR" Style="{StaticResource SectionHeader}"
+                       ToolTip="Notes close in meaning that aren't linked yet" />
+            <ItemsControl x:Name="SimilarList" ItemsSource="{Binding Similar}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type model:SimilarNote}">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Content="+" Style="{StaticResource IconButton}" ToolTip="Add as related link"
+                                    Command="{Binding DataContext.LinkSimilarCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}" />
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding Score, StringFormat='{}{0:0.00}'}" FontSize="11"
+                                       Foreground="{StaticResource FaintBrush}" VerticalAlignment="Center" Margin="6,0,0,0" />
+                            <Button Style="{StaticResource LinkButton}" ToolTip="{Binding Note.Id}"
+                                    Command="{Binding DataContext.OpenSimilarCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}">
+                                <TextBlock Text="{Binding Note.DisplayTitle}" TextTrimming="CharacterEllipsis" />
+                            </Button>
+                        </DockPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="Semantic model unavailable" Foreground="{StaticResource MutedBrush}" FontSize="11.5"
+                       Visibility="{Binding IsSemanticAvailable, Converter={StaticResource InverseBoolToVisibility}}" />
+
             <TextBlock Text="OUTGOING" Style="{StaticResource SectionHeader}" />
             <ItemsControl ItemsSource="{Binding Outgoing}" ItemTemplate="{StaticResource LinkTemplate}" />
 

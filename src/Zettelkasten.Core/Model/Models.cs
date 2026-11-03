@@ -41,6 +41,8 @@ public sealed record TagWithEmbedding(Tag Tag, float[]? Embedding);
 
 public sealed record SearchResult(NoteSummary Note, bool MatchedKeyword, bool MatchedSemantic);
 
+public sealed record SimilarNote(NoteSummary Note, float Score);
+
 public sealed record TagSuggestion(Tag Tag, float Score, bool IsInitialsMatch);
 
 public sealed record TagSuggestions(Tag? ExactMatch, IReadOnlyList<TagSuggestion> Similar);

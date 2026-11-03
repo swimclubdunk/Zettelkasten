@@ -14,16 +14,20 @@ public sealed partial class NotePanelViewModel : ObservableObject, IDisposable
     private readonly INoteRepository _notes;
     private readonly ITagRepository _tags;
     private readonly ITagSuggestionService _suggestions;
+    private readonly ISimilarNotesService _similar;
+    private readonly IEmbeddingService _embeddings;
     private readonly NoteEditorViewModel _editor;
     private readonly IDialogService _dialogs;
     private readonly Debouncer _suggestDebounce;
 
     public NotePanelViewModel(INoteRepository notes, ITagRepository tags, ITagSuggestionService suggestions,
-        NoteEditorViewModel editor, IDialogService dialogs, TimeProvider time)
+        ISimilarNotesService similar, IEmbeddingService embeddings, NoteEditorViewModel editor, IDialogService dialogs, TimeProvider time)
     {
         _notes = notes;
         _tags = tags;
         _suggestions = suggestions;
+        _similar = similar;
+        _embeddings = embeddings;
         _editor = editor;
         _dialogs = dialogs;
         _suggestDebounce = new Debouncer(TimeSpan.FromMilliseconds(200), time);
@@ -34,9 +38,11 @@ public sealed partial class NotePanelViewModel : ObservableObject, IDisposable
     public ObservableCollection<LinkInfo> Outgoing { get; } = [];
     public ObservableCollection<LinkInfo> Backlinks { get; } = [];
     public ObservableCollection<TagSuggestion> Suggestions { get; } = [];
+    public ObservableCollection<SimilarNote> Similar { get; } = [];
 
     [ObservableProperty] private string _tagInput = "";
     [ObservableProperty] private bool _canCreateTag;
+    [ObservableProperty] private bool _isSemanticAvailable;
 
     internal Task PendingSuggest { get; private set; } = Task.CompletedTask;
 
@@ -50,7 +56,7 @@ public sealed partial class NotePanelViewModel : ObservableObject, IDisposable
         Replace(Tags, note?.Tags ?? []);
         if (note is null)
         {
-            Related.Clear(); Outgoing.Clear(); Backlinks.Clear();
+            Related.Clear(); Outgoing.Clear(); Backlinks.Clear(); Similar.Clear();
             return;
         }
         var outgoing = await _notes.GetOutgoingLinksAsync(note.Id);
@@ -58,6 +64,9 @@ public sealed partial class NotePanelViewModel : ObservableObject, IDisposable
         Replace(Related, outgoing.Where(l => l.Kind == LinkKind.Manual));
         Replace(Outgoing, outgoing.Where(l => l.Kind == LinkKind.Inline));
         Replace(Backlinks, backlinks);
+
+        IsSemanticAvailable = _embeddings.IsAvailable;
+        Replace(Similar, IsSemanticAvailable ? await _similar.FindAsync(note.Id) : []);
     }
 
     partial void OnTagInputChanged(string value)
@@ -120,6 +129,17 @@ public sealed partial class NotePanelViewModel : ObservableObject, IDisposable
         await _editor.UpdateAndSaveAsync(n => n.ManualLinks.Remove(link.NoteId));
         await RefreshAsync();
     }
+
+    [RelayCommand]
+    private async Task LinkSimilar(SimilarNote similar)
+    {
+        var id = similar.Note.Id;
+        await _editor.UpdateAndSaveAsync(n => { if (!n.ManualLinks.Contains(id)) n.ManualLinks.Add(id); });
+        await RefreshAsync();
+    }
+
+    [RelayCommand]
+    private void OpenSimilar(SimilarNote similar) => OpenRequested?.Invoke(this, similar.Note.Id);
 
     [RelayCommand]
     private void OpenLink(LinkInfo link)

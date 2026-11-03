@@ -7,6 +7,10 @@ public static class SemanticSettings
     public const int MaxTokens = 256;
     public const float SearchMinScore = 0.25f;
     public const float TagSuggestionMinScore = 0.60f;
+    /// <summary>"Similar notes" in the side panel: a bit above the search floor; unrelated notes score ~0.12
+    /// (tuned against the real model, see RealModelThresholdTests).</summary>
+    public const float SimilarNoteMinScore = 0.30f;
+    public const int MaxSimilarNotes = 5;
     public const int MaxTagSuggestions = 5;
     public const int RrfK = 60;
     public const int MaxResults = 50;
