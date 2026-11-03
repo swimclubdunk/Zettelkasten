@@ -1,8 +1,9 @@
 # Zettelkasten
 
 An offline note-taking app for the Zettelkasten method: notes with unique IDs, inline `[[id]]` links and
-manual "related" links, backlinks, tags with duplicate detection, and search that combines keywords with
-meaning. Everything is stored in one local SQLite file. Nothing is sent over the network.
+manual "related" links, backlinks with the sentence around each link, a local link graph, "similar notes"
+suggestions, tags with duplicate detection, and search that combines keywords with meaning. Light and dark
+theme. Everything is stored in one local SQLite file. Nothing is sent over the network.
 
 ## Setup (once)
 
@@ -27,7 +28,9 @@ the exe for semantic search; copy both together if you move it.
 ## Where data lives
 
 - Notes: `%LocalAppData%\Zettelkasten\zettelkasten.db` (back it up via ⋯ → Export backup…)
+- Settings (theme): `%LocalAppData%\Zettelkasten\settings.json`
 - Logs: `%LocalAppData%\Zettelkasten\logs\`
+- Set the `ZETTELKASTEN_DATA` environment variable to use another data folder (e.g. a demo box) instead.
 - Before a schema upgrade the app copies the database to `zettelkasten.db.bak-<timestamp>`.
 
 ## Keyboard shortcuts
@@ -42,6 +45,17 @@ the exe for semantic search; copy both together if you move it.
 | Alt+← / Alt+→, mouse side buttons | Back / forward |
 | `[[` | Link autocomplete |
 | Ctrl+click on `[[id]]` | Open linked note |
+
+## Side panel
+
+- **Graph** – the open note and everything up to two links away, in both directions (dashed = related link,
+  red ring = missing note). Click a dot to open that note; ▾ collapses the section.
+- **Similar** – notes close in meaning that aren't linked yet (needs the embedding model); `+` adds a related link.
+- **Backlinks** – each inline backlink shows the sentence around the link.
+
+## Theme
+
+⋯ → *Follow Windows theme* (default), *Light theme* or *Dark theme*. The choice is remembered.
 
 ## Search syntax
 

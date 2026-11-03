@@ -6,6 +6,8 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
+                <!-- Swapped for Colors.Dark.xaml by ThemeService; must stay the first dictionary -->
+                <ResourceDictionary Source="Themes/Colors.Light.xaml" />
                 <ResourceDictionary Source="Themes/Theme.xaml" />
             </ResourceDictionary.MergedDictionaries>
             <BooleanToVisibilityConverter x:Key="BoolToVisibility" />

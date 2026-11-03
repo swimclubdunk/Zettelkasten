@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:model="clr-namespace:Zettelkasten.Core.Model;assembly=Zettelkasten.Core"
              xmlns:views="clr-namespace:Zettelkasten.App.Views"
-             Background="{StaticResource WindowBrush}">
+             Background="{DynamicResource WindowBrush}">
     <UserControl.Resources>
         <!-- One template for every link list; broken links are red with a warning sign -->
         <DataTemplate x:Key="LinkTemplate" DataType="{x:Type model:LinkInfo}">
@@ -13,14 +13,14 @@
                 <StackPanel Orientation="Horizontal">
                     <TextBlock x:Name="Warn" Text="⚠ " Visibility="Collapsed" />
                     <TextBlock x:Name="Label" Text="{Binding DisplayTitle}" TextTrimming="CharacterEllipsis" />
-                    <TextBlock x:Name="Kind" Text="  · related" Foreground="{StaticResource MutedBrush}" Visibility="Collapsed" />
+                    <TextBlock x:Name="Kind" Text="  · related" Foreground="{DynamicResource MutedBrush}" Visibility="Collapsed" />
                 </StackPanel>
             </Button>
             <DataTemplate.Triggers>
                 <DataTrigger Binding="{Binding IsBroken}" Value="True">
                     <Setter TargetName="Warn" Property="Visibility" Value="Visible" />
-                    <Setter TargetName="Warn" Property="Foreground" Value="{StaticResource ErrorBrush}" />
-                    <Setter TargetName="Label" Property="Foreground" Value="{StaticResource ErrorBrush}" />
+                    <Setter TargetName="Warn" Property="Foreground" Value="{DynamicResource ErrorBrush}" />
+                    <Setter TargetName="Label" Property="Foreground" Value="{DynamicResource ErrorBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Kind}" Value="Manual">
                     <Setter TargetName="Kind" Property="Visibility" Value="Visible" />
@@ -49,17 +49,17 @@
                 <TextBlock Text="GRAPH" Style="{StaticResource SectionHeader}" Margin="0" VerticalAlignment="Center"
                            ToolTip="Notes up to two links away; dashed lines are related links" />
             </DockPanel>
-            <Border Height="220" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource LineBrush}"
+            <Border Height="220" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}"
                     BorderThickness="1" CornerRadius="4"
                     Visibility="{Binding IsGraphExpanded, Converter={StaticResource BoolToVisibility}}">
                 <Grid>
                     <views:LinkGraphView Graph="{Binding Graph}" NodeCommand="{Binding OpenGraphNodeCommand}"
                                          Visibility="{Binding HasGraphLinks, Converter={StaticResource BoolToVisibility}}" />
-                    <TextBlock Text="No links yet" Foreground="{StaticResource MutedBrush}" FontSize="11.5"
+                    <TextBlock Text="No links yet" Foreground="{DynamicResource MutedBrush}" FontSize="11.5"
                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                Visibility="{Binding HasGraphLinks, Converter={StaticResource InverseBoolToVisibility}}" />
                     <TextBlock Text="{Binding Graph.Truncated, StringFormat='+{0} more not shown'}" FontSize="10"
-                               Foreground="{StaticResource FaintBrush}" Margin="6,0,0,4"
+                               Foreground="{DynamicResource FaintBrush}" Margin="6,0,0,4"
                                HorizontalAlignment="Left" VerticalAlignment="Bottom">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
@@ -112,7 +112,7 @@
                 </TextBox.InputBindings>
             </TextBox>
 
-            <TextBlock Text="Similar existing tags:" Foreground="{StaticResource MutedBrush}" Margin="0,6,0,2"
+            <TextBlock Text="Similar existing tags:" Foreground="{DynamicResource MutedBrush}" Margin="0,6,0,2"
                        Visibility="{Binding HasItems, ElementName=SuggestionList, Converter={StaticResource BoolToVisibility}}" />
             <ItemsControl x:Name="SuggestionList" ItemsSource="{Binding Suggestions}">
                 <ItemsControl.ItemTemplate>
@@ -122,8 +122,8 @@
                                 CommandParameter="{Binding}">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="{Binding Tag.Name, StringFormat='#{0}'}" FontWeight="SemiBold" />
-                                <TextBlock x:Name="Score" Text="{Binding Score, StringFormat='  ({0:0.00})'}" Foreground="{StaticResource MutedBrush}" />
-                                <TextBlock x:Name="Abbrev" Text="  (abbreviation)" Foreground="{StaticResource MutedBrush}" Visibility="Collapsed" />
+                                <TextBlock x:Name="Score" Text="{Binding Score, StringFormat='  ({0:0.00})'}" Foreground="{DynamicResource MutedBrush}" />
+                                <TextBlock x:Name="Abbrev" Text="  (abbreviation)" Foreground="{DynamicResource MutedBrush}" Visibility="Collapsed" />
                             </StackPanel>
                         </Button>
                         <DataTemplate.Triggers>
@@ -170,7 +170,7 @@
                                     Command="{Binding DataContext.LinkSimilarCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     CommandParameter="{Binding}" />
                             <TextBlock DockPanel.Dock="Right" Text="{Binding Score, StringFormat='{}{0:0.00}'}" FontSize="11"
-                                       Foreground="{StaticResource FaintBrush}" VerticalAlignment="Center" Margin="6,0,0,0" />
+                                       Foreground="{DynamicResource FaintBrush}" VerticalAlignment="Center" Margin="6,0,0,0" />
                             <Button Style="{StaticResource LinkButton}" ToolTip="{Binding Note.Id}"
                                     Command="{Binding DataContext.OpenSimilarCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     CommandParameter="{Binding}">
@@ -180,7 +180,7 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
-            <TextBlock Text="Semantic model unavailable" Foreground="{StaticResource MutedBrush}" FontSize="11.5"
+            <TextBlock Text="Semantic model unavailable" Foreground="{DynamicResource MutedBrush}" FontSize="11.5"
                        Visibility="{Binding IsSemanticAvailable, Converter={StaticResource InverseBoolToVisibility}}" />
 
             <TextBlock Text="OUTGOING" Style="{StaticResource SectionHeader}" />
@@ -194,7 +194,7 @@
                         <StackPanel Margin="0,0,0,4">
                             <ContentControl Content="{Binding}" ContentTemplate="{StaticResource LinkTemplate}" />
                             <TextBlock x:Name="Context" Text="{Binding Context}" TextWrapping="Wrap" FontSize="11.5"
-                                       Foreground="{StaticResource MutedBrush}" Margin="0,0,0,2" />
+                                       Foreground="{DynamicResource MutedBrush}" Margin="0,0,0,2" />
                         </StackPanel>
                         <DataTemplate.Triggers>
                             <DataTrigger Binding="{Binding Context}" Value="{x:Null}">

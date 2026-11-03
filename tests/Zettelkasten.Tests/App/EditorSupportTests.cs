@@ -29,4 +29,12 @@ public class EditorSupportTests
         Assert.Equal("Markdown", definition.Name);
         Assert.NotNull(definition.GetNamedColor("WikiLink"));
     });
+
+    [Fact]
+    public void Syntax_colors_follow_the_theme_palette() => StaRunner.Run(() =>
+    {
+        var definition = NoteEditorView.LoadHighlighting();
+        foreach (var (name, key) in ResourceHighlightingBrush.MarkdownColors)
+            Assert.Equal(key, Assert.IsType<ResourceHighlightingBrush>(definition.GetNamedColor(name).Foreground).ResourceKey);
+    });
 }

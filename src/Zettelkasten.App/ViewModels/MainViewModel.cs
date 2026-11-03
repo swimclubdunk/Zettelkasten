@@ -6,6 +6,7 @@ using Zettelkasten.App.Services;
 using Zettelkasten.Core.Abstractions;
 using Zettelkasten.Core.Common;
 using Zettelkasten.Core.Model;
+using Zettelkasten.Core.Settings;
 
 namespace Zettelkasten.App.ViewModels;
 
@@ -15,19 +16,21 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly IEmbeddingService _embeddings;
     private readonly IBackupService _backup;
     private readonly IDialogService _dialogs;
+    private readonly IThemeService _theme;
     private readonly TimeProvider _time;
     private readonly ILogger<MainViewModel> _logger;
     private readonly NavigationHistory _history = new();
     private bool _modelLoadCompleted;
 
     public MainViewModel(INoteRepository notes, IEmbeddingService embeddings, IBackupService backup,
-        IDialogService dialogs, SearchViewModel search, NoteEditorViewModel editor, NotePanelViewModel panel,
+        IDialogService dialogs, IThemeService theme, SearchViewModel search, NoteEditorViewModel editor, NotePanelViewModel panel,
         TimeProvider time, ILogger<MainViewModel> logger)
     {
         _notes = notes;
         _embeddings = embeddings;
         _backup = backup;
         _dialogs = dialogs;
+        _theme = theme;
         _time = time;
         _logger = logger;
         Search = search;
@@ -51,6 +54,19 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string? _statusMessage;
 
     public event EventHandler? FocusEditorRequested;
+
+    public bool IsSystemTheme => _theme.Preference == ThemePreference.System;
+    public bool IsLightTheme => _theme.Preference == ThemePreference.Light;
+    public bool IsDarkTheme => _theme.Preference == ThemePreference.Dark;
+
+    [RelayCommand]
+    private void SetTheme(ThemePreference preference)
+    {
+        _theme.SetPreference(preference);
+        OnPropertyChanged(nameof(IsSystemTheme));
+        OnPropertyChanged(nameof(IsLightTheme));
+        OnPropertyChanged(nameof(IsDarkTheme));
+    }
 
     public async Task InitializeAsync()
     {

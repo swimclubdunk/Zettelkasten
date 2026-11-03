@@ -2,8 +2,9 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:Zettelkasten.App.Views"
+        xmlns:settings="clr-namespace:Zettelkasten.Core.Settings;assembly=Zettelkasten.Core"
         Title="Zettelkasten" Height="820" Width="1320" MinWidth="900" MinHeight="500"
-        Background="{StaticResource WindowBrush}" Foreground="{StaticResource TextBrush}"
+        Background="{DynamicResource WindowBrush}" Foreground="{DynamicResource TextBrush}"
         FontFamily="Segoe UI" FontSize="13">
     <Window.InputBindings>
         <KeyBinding Key="N" Modifiers="Control" Command="{Binding NewNoteCommand}" />
@@ -21,7 +22,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource LineBrush}"
+        <Border Grid.Row="0" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}"
                 BorderThickness="0,0,0,1" Padding="10,8">
             <DockPanel>
                 <Button DockPanel.Dock="Left" Content="←" FontSize="16" Style="{StaticResource IconButton}"
@@ -32,6 +33,13 @@
                     <MenuItem Header="⋯" FontSize="16" ToolTip="More">
                         <MenuItem Header="Delete note…" Command="{Binding DeleteNoteCommand}" />
                         <MenuItem Header="Export backup…" Command="{Binding ExportBackupCommand}" />
+                        <Separator />
+                        <MenuItem Header="Follow Windows theme" IsChecked="{Binding IsSystemTheme, Mode=OneWay}"
+                                  Command="{Binding SetThemeCommand}" CommandParameter="{x:Static settings:ThemePreference.System}" />
+                        <MenuItem Header="Light theme" IsChecked="{Binding IsLightTheme, Mode=OneWay}"
+                                  Command="{Binding SetThemeCommand}" CommandParameter="{x:Static settings:ThemePreference.Light}" />
+                        <MenuItem Header="Dark theme" IsChecked="{Binding IsDarkTheme, Mode=OneWay}"
+                                  Command="{Binding SetThemeCommand}" CommandParameter="{x:Static settings:ThemePreference.Dark}" />
                     </MenuItem>
                 </Menu>
                 <Button DockPanel.Dock="Right" Content="+ New" Padding="14,4" Margin="8,0,0,0"
@@ -52,7 +60,7 @@
                 <ColumnDefinition Width="290" MinWidth="200" />
             </Grid.ColumnDefinitions>
 
-            <ListBox x:Name="ResultsList" Grid.Column="0" BorderThickness="0" Background="{StaticResource WindowBrush}"
+            <ListBox x:Name="ResultsList" Grid.Column="0" BorderThickness="0" Background="{DynamicResource WindowBrush}"
                      ItemsSource="{Binding Search.Results}" SelectedItem="{Binding Search.Selected}"
                      HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                 <ListBox.ItemTemplate>
@@ -67,28 +75,28 @@
                                 </StackPanel>
                                 <TextBlock Text="{Binding Note.DisplayTitle}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                             </DockPanel>
-                            <TextBlock Text="{Binding Note.Id}" Foreground="{StaticResource FaintBrush}" FontSize="10" />
+                            <TextBlock Text="{Binding Note.Id}" Foreground="{DynamicResource FaintBrush}" FontSize="10" />
                         </StackPanel>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
 
-            <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" Background="{StaticResource LineBrush}" />
+            <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" Background="{DynamicResource LineBrush}" />
             <views:NoteEditorView x:Name="EditorView" Grid.Column="2" DataContext="{Binding Editor}" />
-            <GridSplitter Grid.Column="3" HorizontalAlignment="Stretch" Background="{StaticResource LineBrush}" />
+            <GridSplitter Grid.Column="3" HorizontalAlignment="Stretch" Background="{DynamicResource LineBrush}" />
             <views:NotePanelView Grid.Column="4" DataContext="{Binding Panel}" />
         </Grid>
 
-        <Border Grid.Row="2" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource LineBrush}"
+        <Border Grid.Row="2" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}"
                 BorderThickness="0,1,0,0" Padding="12,4">
             <DockPanel>
-                <TextBlock DockPanel.Dock="Right" Text="{Binding ModelStatus}" Foreground="{StaticResource MutedBrush}" />
-                <TextBlock DockPanel.Dock="Right" Foreground="{StaticResource MutedBrush}"
+                <TextBlock DockPanel.Dock="Right" Text="{Binding ModelStatus}" Foreground="{DynamicResource MutedBrush}" />
+                <TextBlock DockPanel.Dock="Right" Foreground="{DynamicResource MutedBrush}"
                            Text="{Binding NoteCount, StringFormat='{}{0} notes  ·  '}" />
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="{Binding Editor.SaveError}" Foreground="{StaticResource ErrorBrush}" FontWeight="SemiBold" Margin="0,0,12,0" />
-                    <TextBlock Text="{Binding Editor.LastSavedAt, StringFormat='Saved {0:HH:mm}', TargetNullValue=''}" Foreground="{StaticResource MutedBrush}" Margin="0,0,12,0" />
-                    <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource MutedBrush}" />
+                    <TextBlock Text="{Binding Editor.SaveError}" Foreground="{DynamicResource ErrorBrush}" FontWeight="SemiBold" Margin="0,0,12,0" />
+                    <TextBlock Text="{Binding Editor.LastSavedAt, StringFormat='Saved {0:HH:mm}', TargetNullValue=''}" Foreground="{DynamicResource MutedBrush}" Margin="0,0,12,0" />
+                    <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource MutedBrush}" />
                 </StackPanel>
             </DockPanel>
         </Border>

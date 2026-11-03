@@ -23,6 +23,7 @@ public sealed class MainViewModelTests
     private readonly FakeDialogService _dialogs = new();
     private readonly StubBackup _backup = new();
     private readonly FakeEmbeddingService _embeddings = new() { IsAvailable = false };
+    private readonly FakeThemeService _theme = new();
     private readonly MainViewModel _vm;
 
     public MainViewModelTests()
@@ -32,7 +33,7 @@ public sealed class MainViewModelTests
         var search = new SearchViewModel(new FakeSearchService(_repo), _time, NullLogger<SearchViewModel>.Instance);
         var panel = new NotePanelViewModel(_repo, new TagRepositoryStub(), new SuggestionStub(),
             new FakeSimilarNotesService(), _embeddings, editor, _dialogs, _time);
-        _vm = new MainViewModel(_repo, _embeddings, _backup, _dialogs, search, editor, panel, _time,
+        _vm = new MainViewModel(_repo, _embeddings, _backup, _dialogs, _theme, search, editor, panel, _time,
             NullLogger<MainViewModel>.Instance);
     }
 
@@ -49,6 +50,22 @@ public sealed class MainViewModelTests
     {
         public Task<Zettelkasten.Core.Model.TagSuggestions> SuggestAsync(string input, CancellationToken ct = default) =>
             Task.FromResult(new Zettelkasten.Core.Model.TagSuggestions(null, []));
+    }
+
+    [Fact]
+    public void Theme_menu_reflects_and_changes_the_preference()
+    {
+        Assert.True(_vm.IsSystemTheme);
+        var changed = new List<string?>();
+        _vm.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+
+        _vm.SetThemeCommand.Execute(Zettelkasten.Core.Settings.ThemePreference.Dark);
+
+        Assert.Equal(Zettelkasten.Core.Settings.ThemePreference.Dark, _theme.Preference);
+        Assert.True(_vm.IsDarkTheme);
+        Assert.False(_vm.IsSystemTheme);
+        Assert.Contains(nameof(MainViewModel.IsDarkTheme), changed);
+        Assert.Contains(nameof(MainViewModel.IsSystemTheme), changed);
     }
 
     [Fact]

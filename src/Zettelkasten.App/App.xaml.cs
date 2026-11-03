@@ -3,6 +3,7 @@ using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
+using Zettelkasten.App.Services;
 using Zettelkasten.App.ViewModels;
 using Zettelkasten.App.Views;
 using Zettelkasten.Core.Abstractions;
@@ -34,6 +35,7 @@ public partial class App : Application
             builder.Services.AddZettelkastenApp(paths);
             _host = builder.Build();
             var services = _host.Services;
+            services.GetRequiredService<ThemeService>().Initialize();
 
             await services.GetRequiredService<DbInitializer>().InitializeAsync();
             var backfill = services.GetRequiredService<EmbeddingBackfillService>();

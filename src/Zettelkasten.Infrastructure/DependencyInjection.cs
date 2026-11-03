@@ -6,6 +6,7 @@ using Zettelkasten.Infrastructure.Data;
 using Zettelkasten.Infrastructure.Embeddings;
 using Zettelkasten.Infrastructure.Notes;
 using Zettelkasten.Infrastructure.Search;
+using Zettelkasten.Infrastructure.Settings;
 using Zettelkasten.Infrastructure.Tags;
 
 namespace Zettelkasten.Infrastructure;
@@ -28,6 +29,7 @@ public static class DependencyInjection
         services.AddSingleton<ISimilarNotesService, SimilarNotesService>();
         services.AddSingleton<ITagSuggestionService, TagSuggestionService>();
         services.AddSingleton<IBackupService, BackupService>();
+        services.AddSingleton<SettingsStore>();
         services.AddSingleton<DbInitializer>();
         services.AddSingleton<EmbeddingBackfillService>();
         return services;

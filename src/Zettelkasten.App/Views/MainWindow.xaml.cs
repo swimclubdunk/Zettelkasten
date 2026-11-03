@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
+using Zettelkasten.App.Services;
 using Zettelkasten.App.ViewModels;
 
 namespace Zettelkasten.App.Views;
@@ -10,9 +11,10 @@ public partial class MainWindow : Window
     private readonly MainViewModel _vm;
     private bool _closeConfirmed;
 
-    public MainWindow(MainViewModel vm)
+    public MainWindow(MainViewModel vm, IThemeService theme)
     {
         InitializeComponent();
+        theme.ThemeChanged += (_, _) => EditorView.ApplyTheme();
         DataContext = _vm = vm;
         vm.FocusEditorRequested += (_, _) => EditorView.FocusEditor();
         PreviewKeyDown += OnPreviewKeyDown;

@@ -12,6 +12,8 @@ public static class AppServices
     {
         services.AddZettelkastenInfrastructure(paths);
         services.AddSingleton<IDialogService, DialogService>();
+        services.AddSingleton<ThemeService>();
+        services.AddSingleton<IThemeService>(sp => sp.GetRequiredService<ThemeService>());
         services.AddSingleton<SearchViewModel>();
         services.AddSingleton<NoteEditorViewModel>();
         services.AddSingleton<NotePanelViewModel>();

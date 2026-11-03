@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <SyntaxDefinition name="Markdown" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+    <!-- Foregrounds below are fallbacks: ResourceHighlightingBrush replaces them with theme palette brushes -->
     <Color name="Heading" foreground="#1F4E79" fontWeight="bold" />
     <Color name="Strong" fontWeight="bold" />
     <Color name="Emphasis" fontStyle="italic" />

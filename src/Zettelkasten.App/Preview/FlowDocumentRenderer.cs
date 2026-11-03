@@ -12,20 +12,14 @@ using WpfInline = System.Windows.Documents.Inline;
 
 namespace Zettelkasten.App.Preview;
 
-/// <summary>Renders Markdown as a native WPF FlowDocument; [[id]] links become clickable note links.</summary>
-public sealed class FlowDocumentRenderer(Brush linkBrush, Brush brokenBrush, Brush codeBackground)
+/// <summary>Renders Markdown as a native WPF FlowDocument; [[id]] links become clickable note links.
+/// Colors are theme resource references, so an open preview follows theme switches.</summary>
+public sealed class FlowDocumentRenderer
 {
     public const string BrokenToolTip = "No note with this ID";
 
     private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder().UseAutoLinks().Build();
     private static readonly FontFamily Mono = new("Cascadia Mono, Consolas");
-
-    public FlowDocumentRenderer()
-        : this(new SolidColorBrush(Color.FromRgb(0x2F, 0x6F, 0xDF)),
-               new SolidColorBrush(Color.FromRgb(0xC6, 0x28, 0x28)),
-               new SolidColorBrush(Color.FromRgb(0xF3, 0xF2, 0xEE)))
-    {
-    }
 
     public FlowDocument Render(string markdown, Func<string, string?> titleLookup, Action<string> onLink)
     {
@@ -36,6 +30,7 @@ public sealed class FlowDocumentRenderer(Brush linkBrush, Brush brokenBrush, Bru
             PagePadding = new Thickness(20, 8, 20, 20),
             TextAlignment = TextAlignment.Left,
         };
+        doc.SetResourceReference(TextElement.ForegroundProperty, "TextBrush");
         foreach (var block in Markdown.Parse(WikiLinkRewriter.Rewrite(markdown, titleLookup), Pipeline))
             if (RenderBlock(block, onLink) is { } rendered) doc.Blocks.Add(rendered);
         return doc;
@@ -52,11 +47,11 @@ public sealed class FlowDocumentRenderer(Brush linkBrush, Brush brokenBrush, Bru
         ParagraphBlock p => WithInlines(new Paragraph { Margin = new Thickness(0, 0, 0, 10) }, p.Inline, onLink),
         QuoteBlock q => Quote(q, onLink),
         ListBlock l => List(l, onLink),
-        CodeBlock c => new Paragraph(new Run(c.Lines.ToString().TrimEnd()))
+        CodeBlock c => Themed(new Paragraph(new Run(c.Lines.ToString().TrimEnd()))
         {
-            FontFamily = Mono, FontSize = 13, Background = codeBackground,
+            FontFamily = Mono, FontSize = 13,
             Padding = new Thickness(10), Margin = new Thickness(0, 0, 0, 10),
-        },
+        }, TextElement.BackgroundProperty, "CodeBackgroundBrush"),
         ThematicBreakBlock => new BlockUIContainer(new Separator { Margin = new Thickness(0, 6, 0, 12) }),
         HtmlBlock html => new Paragraph(new Run(html.Lines.ToString())),
         LeafBlock leaf when leaf.Inline is not null => WithInlines(new Paragraph(), leaf.Inline, onLink),
@@ -67,9 +62,11 @@ public sealed class FlowDocumentRenderer(Brush linkBrush, Brush brokenBrush, Bru
     {
         var section = new Section
         {
-            BorderBrush = Brushes.LightGray, BorderThickness = new Thickness(3, 0, 0, 0),
-            Padding = new Thickness(12, 0, 0, 0), Foreground = Brushes.DimGray, Margin = new Thickness(0, 0, 0, 10),
+            BorderThickness = new Thickness(3, 0, 0, 0),
+            Padding = new Thickness(12, 0, 0, 0), Margin = new Thickness(0, 0, 0, 10),
         };
+        section.SetResourceReference(WpfBlock.BorderBrushProperty, "LineBrush");
+        section.SetResourceReference(TextElement.ForegroundProperty, "MutedBrush");
         foreach (var child in quote)
             if (RenderBlock(child, onLink) is { } rendered) section.Blocks.Add(rendered);
         return section;
@@ -118,7 +115,7 @@ public sealed class FlowDocumentRenderer(Brush linkBrush, Brush brokenBrush, Bru
                     target.Add(span);
                     break;
                 case CodeInline code:
-                    target.Add(new Run(code.Content) { FontFamily = Mono, Background = codeBackground });
+                    target.Add(Themed(new Run(code.Content) { FontFamily = Mono }, TextElement.BackgroundProperty, "CodeBackgroundBrush"));
                     break;
                 case LinkInline { IsImage: true } image:
                     target.Add(new Run($"[image: {image.Url}]"));
@@ -147,11 +144,12 @@ public sealed class FlowDocumentRenderer(Brush linkBrush, Brush brokenBrush, Bru
 
     private WpfInline Link(string url, Action<Hyperlink> fill, Action<string> onLink)
     {
-        var hyperlink = new Hyperlink { Foreground = linkBrush, Cursor = System.Windows.Input.Cursors.Hand };
+        var hyperlink = new Hyperlink { Cursor = System.Windows.Input.Cursors.Hand };
+        hyperlink.SetResourceReference(TextElement.ForegroundProperty, "AccentBrush");
         fill(hyperlink);
         if (url.StartsWith(WikiLinkRewriter.BrokenScheme, StringComparison.Ordinal))
         {
-            hyperlink.Foreground = brokenBrush;
+            hyperlink.SetResourceReference(TextElement.ForegroundProperty, "ErrorBrush");
             hyperlink.ToolTip = BrokenToolTip;
         }
         else if (!url.StartsWith(WikiLinkRewriter.NoteScheme, StringComparison.Ordinal))
@@ -160,5 +158,11 @@ public sealed class FlowDocumentRenderer(Brush linkBrush, Brush brokenBrush, Bru
         }
         hyperlink.Click += (_, _) => onLink(url);
         return hyperlink;
+    }
+
+    private static T Themed<T>(T element, DependencyProperty property, string resourceKey) where T : FrameworkContentElement
+    {
+        element.SetResourceReference(property, resourceKey);
+        return element;
     }
 }

@@ -14,7 +14,7 @@ A fully offline, single-user Zettelkasten desktop application for personal daily
 - Tag notes; creating a tag suggests semantically similar existing tags to prevent duplicates.
 - No network access at runtime. No separate server process. All data in one local file.
 
-**Non-goals (for now):** graph view, images/attachments, multiple windows/tabs, Markdown file import/export, sync, multi-user, cross-platform.
+**Non-goals (for now):** full-box graph view (a local graph of the open note exists), images/attachments, multiple windows/tabs, Markdown file import/export, sync, multi-user, cross-platform.
 
 ## 2. Technology
 
@@ -106,12 +106,12 @@ Three-column main window: results list (left), note editor (center), side panel 
 
 - **Results list:** title, ID, match badges (🔤 keyword, 🧠 semantic).
 - **Editor:** ID (read-only, faint), Edit/Preview toggle, then the content directly (no title box; Ctrl+N focuses the body). A one-line Markdown cheat sheet sits under the editor while editing. Edit = AvalonEdit with light Markdown highlighting and `[[` autocomplete (title search, inserts `[[id]]`). Preview = Markdig → FlowDocument; `[[id]]` rendered as clickable link labelled with the target title (broken ones in red).
-- **Side panel:** tags (remove ✕, add box with suggestion dropdown), related/manual links (remove ✕, "+ link note" picker), outgoing links (broken marked ⚠), backlinks (inline + manual).
+- **Side panel:** collapsible local graph (open note + 2 hops both ways, max 40 nodes, "+N more" hint; `LinkNeighborhood` BFS + deterministic `ForceLayout`; click opens a note), tags (remove ✕, add box with suggestion dropdown), related/manual links (remove ✕, "+ link note" picker), similar notes (`ISimilarNotesService`: the note's stored vector against the index, excluding itself and notes linked either way, score ≥ `SimilarNoteMinScore` 0.30, max 5; `+` adds a related link), outgoing links (broken marked ⚠), backlinks (inline + manual; inline ones show the surrounding sentence from `LinkContext`, links rendered as titles, ≤ 140 chars).
 - **Status bar:** last saved time, note count, model status, save errors.
 - **Auto-save:** 1 s after last edit, on note switch, and on window close; `Ctrl+S` forces save.
 - **Navigation:** clicking links opens notes; back/forward history (`Alt+←/→`, mouse XButtons).
 - **Shortcuts:** `Ctrl+K`/`Ctrl+F` focus search, `Ctrl+N` new note, `Ctrl+E` toggle Edit/Preview, `Ctrl+L` add manual link, `Ctrl+S` save.
-- **Theme:** light; all colors in one resource dictionary.
+- **Theme:** light and dark palettes (`Themes/Colors.Light.xaml`, `Colors.Dark.xaml`, same keys, referenced as DynamicResource); `Theme.xaml` holds styles incl. implicit styles for stock controls. `ThemeService` applies System/Light/Dark from `settings.json` (System follows the Windows app theme live), swaps the palette, sets dark title bars; editor syntax colors resolve from the palette (`ResourceHighlightingBrush`).
 
 ## 7. Error handling
 

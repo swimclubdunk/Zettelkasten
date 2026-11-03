@@ -6,6 +6,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Xml;
 using ICSharpCode.AvalonEdit.CodeCompletion;
+using ICSharpCode.AvalonEdit.Editing;
 using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.AvalonEdit.Highlighting.Xshd;
 using Zettelkasten.App.Editor;
@@ -25,9 +26,12 @@ public partial class NoteEditorView : UserControl
     public NoteEditorView()
     {
         InitializeComponent();
-        _renderer = new FlowDocumentRenderer(
-            (Brush)FindResource("AccentBrush"), (Brush)FindResource("ErrorBrush"), (Brush)FindResource("CodeBackgroundBrush"));
+        _renderer = new FlowDocumentRenderer();
         Editor.SyntaxHighlighting = LoadHighlighting();
+        Editor.TextArea.SetResourceReference(TextArea.SelectionBrushProperty, "TextSelectionBrush");
+        Editor.TextArea.SelectionForeground = null; // keep syntax colors inside the selection
+        Editor.TextArea.SelectionBorder = null;
+        ApplyTheme();
         Editor.TextChanged += (_, _) =>
         {
             if (!_syncing && _vm is not null) _vm.Content = Editor.Text;
@@ -42,7 +46,16 @@ public partial class NoteEditorView : UserControl
         using var stream = typeof(NoteEditorView).Assembly.GetManifestResourceStream("Markdown.xshd")
                            ?? throw new InvalidOperationException("Markdown.xshd resource is missing.");
         using var reader = XmlReader.Create(stream);
-        return HighlightingLoader.Load(reader, HighlightingManager.Instance);
+        var definition = HighlightingLoader.Load(reader, HighlightingManager.Instance);
+        ResourceHighlightingBrush.Apply(definition);
+        return definition;
+    }
+
+    /// <summary>Re-reads palette colors that AvalonEdit doesn't track as resources (caret, syntax colors).</summary>
+    public void ApplyTheme()
+    {
+        Editor.TextArea.Caret.CaretBrush = TryFindResource("TextBrush") as Brush;
+        Editor.TextArea.TextView.Redraw();
     }
 
     public void FocusEditor()
@@ -113,10 +126,19 @@ public partial class NoteEditorView : UserControl
         if (candidates.Count == 0) return;
 
         _completion = new CompletionWindow(Editor.TextArea) { Width = 380 };
+        _completion.SetResourceReference(BackgroundProperty, "SurfaceBrush");
+        _completion.SetResourceReference(ForegroundProperty, "TextBrush");
+        _completion.SetResourceReference(BorderBrushProperty, "LineBrush");
+        _completion.CompletionList.SetResourceReference(ForegroundProperty, "TextBrush");
         foreach (var note in candidates)
             _completion.CompletionList.CompletionData.Add(new WikiLinkCompletionData(note));
         _completion.Closed += (_, _) => _completion = null;
         _completion.Show();
+        if (_completion.CompletionList.ListBox is { } list)
+        {
+            list.SetResourceReference(BackgroundProperty, "SurfaceBrush");
+            list.SetResourceReference(ForegroundProperty, "TextBrush");
+        }
     }
 
     private void OnEditorMouseDown(object sender, MouseButtonEventArgs e)
