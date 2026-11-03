@@ -136,6 +136,26 @@ public sealed class NoteRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Inline_backlinks_carry_the_sentence_around_the_link()
+    {
+        var target = await CreateNextAsync();
+        var other = await CreateNextAsync();
+        var source = await CreateNextAsync();
+        var manual = await CreateNextAsync();
+        target.Content = "# Spaced repetition";
+        other.Content = "Forgetting curve";
+        source.Content = $"# Source\nIntro. Use [[{target.Id}]] against the [[{other.Id}]]. More.";
+        manual.Content = "Manual";
+        manual.ManualLinks = [target.Id];
+        foreach (var n in new[] { target, other, source, manual }) await _repo.SaveAsync(n);
+
+        var back = await _repo.GetBacklinksAsync(target.Id);
+        Assert.Equal("Use Spaced repetition against the Forgetting curve.",
+            back.Single(l => l.NoteId == source.Id).Context);
+        Assert.Null(back.Single(l => l.NoteId == manual.Id).Context);
+    }
+
+    [Fact]
     public async Task Broken_link_resolves_when_target_is_created()
     {
         var note = await CreateNextAsync();

@@ -186,9 +186,17 @@ public sealed class NoteRepository(
                 where l.TargetId == id
                 join n in db.Notes on l.SourceId equals n.Id
                 orderby n.Title, l.Kind
-                select new { l.SourceId, n.Title, l.Kind })
+                select new { l.SourceId, n.Title, l.Kind, Content = l.Kind == LinkKind.Inline ? n.Content : null })
             .ToListAsync(ct);
-        return rows.Select(r => new LinkInfo(r.SourceId, r.Title, r.Kind)).ToList();
+
+        // Titles for every note the context snippets may mention, fetched in one query
+        var mentioned = rows.Where(r => r.Content is not null)
+            .SelectMany(r => LinkParser.ExtractTargets(r.Content!)).Distinct().ToList();
+        var titles = await db.Notes.AsNoTracking().Where(n => mentioned.Contains(n.Id))
+            .ToDictionaryAsync(n => n.Id, n => n.Title, ct);
+
+        return rows.Select(r => new LinkInfo(r.SourceId, r.Title, r.Kind,
+            r.Content is null ? null : LinkContext.Extract(r.Content, id, titles.GetValueOrDefault))).ToList();
     }
 
     public async Task<int> CountAsync(CancellationToken ct = default)

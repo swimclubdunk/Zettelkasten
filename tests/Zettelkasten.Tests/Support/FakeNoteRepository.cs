@@ -67,7 +67,8 @@ public sealed class FakeNoteRepository(TimeProvider? time = null) : INoteReposit
     public Task<IReadOnlyList<LinkInfo>> GetBacklinksAsync(string id, CancellationToken ct = default)
     {
         var inline = _notes.Values.Where(n => n.Id != id && LinkParser.ExtractTargets(n.Content).Contains(id))
-            .Select(n => new LinkInfo(n.Id, n.Title, LinkKind.Inline));
+            .Select(n => new LinkInfo(n.Id, n.Title, LinkKind.Inline,
+                LinkContext.Extract(n.Content, id, t => _notes.GetValueOrDefault(t)?.Title)));
         var manual = _notes.Values.Where(n => n.ManualLinks.Contains(id))
             .Select(n => new LinkInfo(n.Id, n.Title, LinkKind.Manual));
         return Result(inline.Concat(manual));

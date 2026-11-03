@@ -117,7 +117,23 @@
             <ItemsControl ItemsSource="{Binding Outgoing}" ItemTemplate="{StaticResource LinkTemplate}" />
 
             <TextBlock Text="BACKLINKS" Style="{StaticResource SectionHeader}" />
-            <ItemsControl ItemsSource="{Binding Backlinks}" ItemTemplate="{StaticResource LinkTemplate}" />
+            <ItemsControl ItemsSource="{Binding Backlinks}">
+                <ItemsControl.ItemTemplate>
+                    <!-- The sentence around the link says why the other note points here -->
+                    <DataTemplate DataType="{x:Type model:LinkInfo}">
+                        <StackPanel Margin="0,0,0,4">
+                            <ContentControl Content="{Binding}" ContentTemplate="{StaticResource LinkTemplate}" />
+                            <TextBlock x:Name="Context" Text="{Binding Context}" TextWrapping="Wrap" FontSize="11.5"
+                                       Foreground="{StaticResource MutedBrush}" Margin="0,0,0,2" />
+                        </StackPanel>
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding Context}" Value="{x:Null}">
+                                <Setter TargetName="Context" Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

@@ -27,8 +27,9 @@ public sealed record NoteSummary(string Id, string Title, DateTimeOffset Updated
 
 public enum LinkKind { Inline = 0, Manual = 1 }
 
-/// <summary>A link as shown in the side panel. <see cref="Title"/> is null when the target note doesn't exist.</summary>
-public sealed record LinkInfo(string NoteId, string? Title, LinkKind Kind)
+/// <summary>A link as shown in the side panel. <see cref="Title"/> is null when the target note doesn't exist.
+/// <see cref="Context"/> is the sentence around an inline backlink; null otherwise.</summary>
+public sealed record LinkInfo(string NoteId, string? Title, LinkKind Kind, string? Context = null)
 {
     public bool IsBroken => Title is null;
     public string DisplayTitle => Title is null ? NoteId : string.IsNullOrWhiteSpace(Title) ? "(empty note)" : Title;
