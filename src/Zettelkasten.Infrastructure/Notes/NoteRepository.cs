@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Zettelkasten.Core.Abstractions;
+using Zettelkasten.Core.Graph;
 using Zettelkasten.Core.Ids;
 using Zettelkasten.Core.Links;
 using Zettelkasten.Core.Model;
@@ -197,6 +198,19 @@ public sealed class NoteRepository(
 
         return rows.Select(r => new LinkInfo(r.SourceId, r.Title, r.Kind,
             r.Content is null ? null : LinkContext.Extract(r.Content, id, titles.GetValueOrDefault))).ToList();
+    }
+
+    public async Task<LinkGraph> GetNeighborhoodAsync(string id, int depth = 2, int maxNodes = 40, CancellationToken ct = default)
+    {
+        await using var db = await factory.CreateDbContextAsync(ct);
+        return await LinkNeighborhood.BuildAsync(id, depth, maxNodes,
+            async ids => await db.NoteLinks.AsNoTracking()
+                .Where(l => ids.Contains(l.SourceId) || ids.Contains(l.TargetId))
+                .Select(l => new GraphEdge(l.SourceId, l.TargetId, l.Kind))
+                .ToListAsync(ct),
+            async ids => await db.Notes.AsNoTracking()
+                .Where(n => ids.Contains(n.Id))
+                .ToDictionaryAsync(n => n.Id, n => n.Title, ct));
     }
 
     public async Task<int> CountAsync(CancellationToken ct = default)

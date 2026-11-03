@@ -1,3 +1,4 @@
+using Zettelkasten.Core.Graph;
 using Zettelkasten.Core.Model;
 using Zettelkasten.Core.Search;
 
@@ -17,6 +18,8 @@ public interface INoteRepository
     Task<IReadOnlyList<NoteSummary>> GetSummariesAsync(IReadOnlyList<string> ids, CancellationToken ct = default);
     Task<IReadOnlyList<LinkInfo>> GetOutgoingLinksAsync(string id, CancellationToken ct = default);
     Task<IReadOnlyList<LinkInfo>> GetBacklinksAsync(string id, CancellationToken ct = default);
+    /// <summary>The note and the notes within <paramref name="depth"/> links of it, in either direction.</summary>
+    Task<LinkGraph> GetNeighborhoodAsync(string id, int depth = 2, int maxNodes = 40, CancellationToken ct = default);
     Task<int> CountAsync(CancellationToken ct = default);
 }
 

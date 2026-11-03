@@ -156,6 +156,30 @@ public sealed class NoteRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Neighborhood_walks_inline_and_manual_links_two_hops()
+    {
+        var center = await CreateNextAsync();
+        var hop1 = await CreateNextAsync();
+        var hop2 = await CreateNextAsync();
+        var hop3 = await CreateNextAsync();
+        var fan = await CreateNextAsync();
+        center.Content = $"# Center\n[[{hop1.Id}]] [[20990101000000]]";
+        hop1.Content = $"Hop one\n[[{hop2.Id}]]";
+        hop2.Content = $"Hop two\n[[{hop3.Id}]]";
+        fan.Content = "Fan";
+        fan.ManualLinks = [center.Id];
+        foreach (var n in new[] { center, hop1, hop2, hop3, fan }) await _repo.SaveAsync(n);
+
+        var g = await _repo.GetNeighborhoodAsync(center.Id);
+
+        Assert.Equal(new Dictionary<string, int> { [center.Id] = 0, [hop1.Id] = 1, ["20990101000000"] = 1, [fan.Id] = 1, [hop2.Id] = 2 },
+            g.Nodes.ToDictionary(n => n.Id, n => n.Hop));
+        Assert.True(g.Nodes.Single(n => n.Id == "20990101000000").IsBroken);
+        Assert.Equal("Center", g.Nodes.Single(n => n.Id == center.Id).Title);
+        Assert.Contains(g.Edges, e => e.SourceId == fan.Id && e.Kind == LinkKind.Manual);
+    }
+
+    [Fact]
     public async Task Broken_link_resolves_when_target_is_created()
     {
         var note = await CreateNextAsync();

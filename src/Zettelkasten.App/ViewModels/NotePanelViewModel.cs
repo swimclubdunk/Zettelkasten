@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Zettelkasten.App.Services;
 using Zettelkasten.Core.Abstractions;
 using Zettelkasten.Core.Common;
+using Zettelkasten.Core.Graph;
 using Zettelkasten.Core.Model;
 using Zettelkasten.Core.Tags;
 
@@ -43,6 +44,12 @@ public sealed partial class NotePanelViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _tagInput = "";
     [ObservableProperty] private bool _canCreateTag;
     [ObservableProperty] private bool _isSemanticAvailable;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasGraphLinks))]
+    private LinkGraph? _graph;
+    [ObservableProperty] private bool _isGraphExpanded = true;
+
+    public bool HasGraphLinks => Graph is { Edges.Count: > 0 };
 
     internal Task PendingSuggest { get; private set; } = Task.CompletedTask;
 
@@ -57,6 +64,7 @@ public sealed partial class NotePanelViewModel : ObservableObject, IDisposable
         if (note is null)
         {
             Related.Clear(); Outgoing.Clear(); Backlinks.Clear(); Similar.Clear();
+            Graph = null;
             return;
         }
         var outgoing = await _notes.GetOutgoingLinksAsync(note.Id);
@@ -64,6 +72,7 @@ public sealed partial class NotePanelViewModel : ObservableObject, IDisposable
         Replace(Related, outgoing.Where(l => l.Kind == LinkKind.Manual));
         Replace(Outgoing, outgoing.Where(l => l.Kind == LinkKind.Inline));
         Replace(Backlinks, backlinks);
+        Graph = await _notes.GetNeighborhoodAsync(note.Id);
 
         IsSemanticAvailable = _embeddings.IsAvailable;
         Replace(Similar, IsSemanticAvailable ? await _similar.FindAsync(note.Id) : []);
@@ -140,6 +149,15 @@ public sealed partial class NotePanelViewModel : ObservableObject, IDisposable
 
     [RelayCommand]
     private void OpenSimilar(SimilarNote similar) => OpenRequested?.Invoke(this, similar.Note.Id);
+
+    [RelayCommand]
+    private void OpenGraphNode(GraphNode node)
+    {
+        if (!node.IsBroken && node.Hop > 0) OpenRequested?.Invoke(this, node.Id);
+    }
+
+    [RelayCommand]
+    private void ToggleGraph() => IsGraphExpanded = !IsGraphExpanded;
 
     [RelayCommand]
     private void OpenLink(LinkInfo link)

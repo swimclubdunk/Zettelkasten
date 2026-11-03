@@ -1,5 +1,6 @@
 using System.Globalization;
 using Zettelkasten.Core.Abstractions;
+using Zettelkasten.Core.Graph;
 using Zettelkasten.Core.Links;
 using Zettelkasten.Core.Model;
 
@@ -73,6 +74,15 @@ public sealed class FakeNoteRepository(TimeProvider? time = null) : INoteReposit
             .Select(n => new LinkInfo(n.Id, n.Title, LinkKind.Manual));
         return Result(inline.Concat(manual));
     }
+
+    public Task<LinkGraph> GetNeighborhoodAsync(string id, int depth = 2, int maxNodes = 40, CancellationToken ct = default) =>
+        LinkNeighborhood.BuildAsync(id, depth, maxNodes,
+            ids => Result(_notes.Values.SelectMany(n =>
+                    LinkParser.ExtractTargets(n.Content).Select(t => new GraphEdge(n.Id, t, LinkKind.Inline))
+                        .Concat(n.ManualLinks.Select(t => new GraphEdge(n.Id, t, LinkKind.Manual))))
+                .Where(e => ids.Contains(e.SourceId) || ids.Contains(e.TargetId))),
+            ids => Task.FromResult<IReadOnlyDictionary<string, string>>(
+                ids.Where(_notes.ContainsKey).ToDictionary(i => i, i => _notes[i].Title)));
 
     public Task<int> CountAsync(CancellationToken ct = default) => Task.FromResult(_notes.Count);
 

@@ -71,6 +71,31 @@ public sealed class NotePanelViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task Refresh_builds_the_local_graph_and_nodes_open_notes()
+    {
+        var target = _repo.Add("Target");
+        var note = await OpenAsync(_repo.Add("Note", $"[[{target.Id}]] [[20990101000000]]"));
+        string? opened = null;
+        _vm.OpenRequested += (_, id) => opened = id;
+
+        Assert.NotNull(_vm.Graph);
+        Assert.Equal(new[] { note.Id, "20990101000000", target.Id }.Order(), _vm.Graph!.Nodes.Select(n => n.Id).Order());
+        Assert.True(_vm.HasGraphLinks);
+
+        _vm.OpenGraphNodeCommand.Execute(_vm.Graph.Nodes.Single(n => n.Id == "20990101000000"));
+        Assert.Null(opened); // broken: nothing to open
+        _vm.OpenGraphNodeCommand.Execute(_vm.Graph.Nodes.Single(n => n.Id == target.Id));
+        Assert.Equal(target.Id, opened);
+    }
+
+    [Fact]
+    public async Task A_note_without_links_has_no_graph_links()
+    {
+        await OpenAsync(_repo.Add("Lonely"));
+        Assert.False(_vm.HasGraphLinks);
+    }
+
+    [Fact]
     public async Task Refresh_lists_similar_notes_for_the_open_note()
     {
         var other = _repo.Add("Other");

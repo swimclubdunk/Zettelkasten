@@ -49,6 +49,8 @@ public sealed class NoteEditorViewModelTests : IDisposable
         public Task<IReadOnlyList<NoteSummary>> GetSummariesAsync(IReadOnlyList<string> ids, CancellationToken ct = default) => inner.GetSummariesAsync(ids, ct);
         public Task<IReadOnlyList<LinkInfo>> GetOutgoingLinksAsync(string id, CancellationToken ct = default) => inner.GetOutgoingLinksAsync(id, ct);
         public Task<IReadOnlyList<LinkInfo>> GetBacklinksAsync(string id, CancellationToken ct = default) => inner.GetBacklinksAsync(id, ct);
+        public Task<Zettelkasten.Core.Graph.LinkGraph> GetNeighborhoodAsync(string id, int depth = 2, int maxNodes = 40, CancellationToken ct = default) =>
+            inner.GetNeighborhoodAsync(id, depth, maxNodes, ct);
         public Task<int> CountAsync(CancellationToken ct = default) => inner.CountAsync(ct);
     }
 
